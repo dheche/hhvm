@@ -23,7 +23,7 @@
 %global build_libquadmath 0
 %endif
 %global build_cloog 1
-%global build_libstdcxx_docs 1
+%global build_libstdcxx_docs 0
 # If you don't have already a usable gcc-java and libgcj for your arch,
 # do on some arch which has it rpmbuild -bc --with java_tar gcc.spec
 # which creates libjava-classes-%{version}-%{release}.tar.bz2
@@ -296,7 +296,7 @@ Requires: libgfortran = %{version}-%{release}
 Requires: libquadmath = %{version}-%{release}
 Requires: libquadmath-devel = %{version}-%{release}
 %endif
-BuildRequires: gmp-devel >= 4.1.2-8, mpfr-devel >= 2.2.1, libmpc-devel >= 0.8.1
+BuildRequires: gmp-devel >= 4.1.2-8, mpfr-devel >= 2.2.1, libmpc-devel >= 0.8-3
 Requires(post): /sbin/install-info
 Requires(preun): /sbin/install-info
 Autoreq: true
@@ -573,7 +573,7 @@ This package contains static Go libraries.
 Summary: Support for compiling GCC plugins
 Group: Development/Languages
 Requires: gcc = %{version}-%{release}
-Requires: gmp-devel >= 4.1.2-8, mpfr-devel >= 2.2.1, libmpc-devel >= 0.8.1
+Requires: gmp-devel >= 4.1.2-8, mpfr-devel >= 2.2.1, libmpc-devel >= 0.8-3
 
 %description plugin-devel
 This package contains header files and other support files
@@ -1083,7 +1083,7 @@ mkdir -p ../rpm.doc/libstdc++-v3
 cp -r -p ../libstdc++-v3/doc/html ../rpm.doc/libstdc++-v3/html
 cp -r -p $libstdcxx_doc_builddir/html ../rpm.doc/libstdc++-v3/html/api
 mkdir -p %{buildroot}%{_mandir}/man3
-cp -r -p $libstdcxx_doc_builddir/man/man3/* %{buildroot}%{_mandir}/man3/
+#cp -r -p $libstdcxx_doc_builddir/man/man3/* %{buildroot}%{_mandir}/man3/
 find ../rpm.doc/libstdc++-v3 -name \*~ | xargs rm
 %endif
 
@@ -2468,6 +2468,9 @@ fi
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/plugin
 
 %changelog
+* Tue Nov 19 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 4.6.2-1
+- rebuilt for el6
+
 * Thu Oct 27 2011 Jakub Jelinek <jakub@redhat.com> 4.6.2-1
 - update from the 4.6 branch
   - GCC 4.6.2 release
