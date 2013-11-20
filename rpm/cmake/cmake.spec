@@ -62,8 +62,8 @@ The %{name}-gui package contains the Qt based GUI for CMake.
 
 
 %build
-export CFLAGS="$RPM_OPT_FLAGS"
-export CXXFLAGS="$RPM_OPT_FLAGS"
+export CFLAGS="$RPM_OPT_FLAGS -ltinfo"
+export CXXFLAGS="$RPM_OPT_FLAGS -ltinfo"
 mkdir build
 pushd build
 ../bootstrap --prefix=%{_prefix} --datadir=/share/%{name} \
@@ -159,6 +159,9 @@ update-mime-database %{_datadir}/mime &> /dev/null || :
 
 
 %changelog
+* Wed Nov 20 2013 Teguh Dwicaksana <dheche@fedoraproject.org - 2.8.5-5
+- Rebuilt for el6
+
 * Thu Jul 28 2011 Orion Poplawski <orion@cora.nwra.com> - 2.8.5-3
 - Updated patch to find dcmtk in Fedora (Bug #720140)
 
