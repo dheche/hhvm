@@ -1,0 +1,22 @@
+diff -up libevent-1.4.13-stable/configure.in.orig libevent-1.4.13-stable/configure.in
+--- libevent-1.4.13-stable/configure.in.orig	2009-11-17 23:08:06.000000000 -0500
++++ libevent-1.4.13-stable/configure.in	2009-12-15 10:57:20.281740000 -0500
+@@ -138,7 +138,6 @@ AC_HEADER_TIME
+ dnl Checks for library functions.
+ AC_CHECK_FUNCS(gettimeofday vasprintf fcntl clock_gettime strtok_r strsep getaddrinfo getnameinfo strlcpy inet_ntop signal sigaction strtoll issetugid geteuid getegid)
+ 
+-AC_CHECK_SIZEOF(long)
+ 
+ if test "x$ac_cv_func_clock_gettime" = "xyes"; then
+    AC_DEFINE(DNS_USE_CPU_CLOCK_FOR_ID, 1, [Define if clock_gettime is available in libc])
+@@ -317,9 +316,6 @@ AC_CHECK_TYPES([fd_mask], , ,
+ #include <select.h>
+ #endif])
+ 
+-AC_CHECK_SIZEOF(long long)
+-AC_CHECK_SIZEOF(int)
+-AC_CHECK_SIZEOF(short)
+ AC_CHECK_TYPES([struct in6_addr], , ,
+ [#ifdef WIN32
+ #include <winsock2.h>
+diff -up libevent-1.4.13-stable/epoll.c.orig libevent-1.4.13-stable/epoll.c
