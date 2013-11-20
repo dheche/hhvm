@@ -1,0 +1,40 @@
+--- gcc/config.gcc.jj	2008-04-24 15:42:46.000000000 -0500
++++ gcc/config.gcc	2008-04-24 15:44:51.000000000 -0500
+@@ -2530,7 +2530,7 @@ sparc-*-rtems*)
+ 	tmake_file="sparc/t-elf sparc/t-crtin sparc/t-crtfm t-rtems"
+ 	extra_parts="crtbegin.o crtend.o"
+ 	;;
+-sparc-*-linux*)
++sparc-*-linux* | sparcv9-*-linux*)
+ 	tm_file="${tm_file} dbxelf.h elfos.h sparc/sysv4.h gnu-user.h linux.h glibc-stdint.h"
+ 	extra_options="${extra_options} sparc/long-double-switch.opt"
+ 	case ${target} in
+@@ -2624,7 +2624,7 @@ sparc64-*-rtems*)
+ 	tmake_file="${tmake_file} sparc/t-crtin sparc/t-crtfm t-rtems"
+ 	extra_parts="crtbegin.o crtend.o"
+ 	;;
+-sparc64-*-linux*)
++sparc64*-*-linux*)
+ 	tm_file="sparc/biarch64.h ${tm_file} dbxelf.h elfos.h sparc/sysv4.h gnu-user.h linux.h glibc-stdint.h sparc/linux64.h"
+ 	extra_options="${extra_options} sparc/long-double-switch.opt"
+ 	tmake_file="${tmake_file} sparc/t-linux sparc/t-linux64 sparc/t-crtfm"
+--- libgcc/config.host.jj	2008-04-24 15:46:19.000000000 -0500
++++ libgcc/config.host	2008-04-24 15:46:49.000000000 -0500
+@@ -572,7 +572,7 @@ sparc64-*-openbsd*)
+ 	;;
+ sparc-*-elf*)
+ 	;;
+-sparc-*-linux*)		# SPARC's running GNU/Linux, libc6
++sparc-*-linux* | sparcv9*-*-linux*)		# SPARC's running GNU/Linux, libc6
+ 	extra_parts="$extra_parts crtfastmath.o"
+ 	tmake_file="${tmake_file} sparc/t-crtfm"
+ 	;;
+@@ -590,7 +590,7 @@ sparc-wrs-vxworks)
+ 	;;
+ sparc64-*-freebsd*|ultrasparc-*-freebsd*)
+ 	;;
+-sparc64-*-linux*)		# 64-bit SPARC's running GNU/Linux
++sparc64*-*-linux*)		# 64-bit SPARC's running GNU/Linux
+ 	extra_parts="$extra_parts crtfastmath.o"
+ 	tmake_file="${tmake_file} sparc/t-crtfm"
+ 	;;
