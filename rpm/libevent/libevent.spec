@@ -1,6 +1,6 @@
 Name:           libevent
-Version:        1.4.13
-Release:        4%{?dist}
+Version:        1.4.14b
+Release:        1%{?dist}
 Summary:        Abstract asynchronous event notification library
 
 Group:          System Environment/Libraries
@@ -12,6 +12,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: doxygen
 
 Patch00: libevent-1.4.13-stable-configure.patch
+Patch01: libevent-1.4.14.fb-changes.diff
 
 %description
 The libevent API provides a mechanism to execute a callback function
@@ -59,6 +60,9 @@ develop programs using %{name}, you will need to install %{name}-devel.
 
 # 477685 -  libevent-devel multilib conflict
 %patch00 -p1
+
+# FB Patch
+%patch01 -p1
 
 %build
 %configure \
@@ -136,6 +140,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,0644)
 
 %changelog
+* Wed Nov 20 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 1.4.14b-1
+- Updated to 1.4.14b stable
+- Add fb patch
+
 * Mon Apr 23 2012 Steve Dickson <steved@redhat.com> 1.4.13-4
 - Moved header files into there own rpm (bz 658051)
 - Added event-config.h to the new headers rpm.
