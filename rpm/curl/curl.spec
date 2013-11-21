@@ -1,7 +1,7 @@
 Summary: A utility for getting files from remote servers (FTP, HTTP, and others)
 Name: curl
 Version: 7.29.0
-Release: 12%{?dist}
+Release: 13%{?dist}
 License: MIT
 Group: Applications/Internet
 Source: http://curl.haxx.se/download/%{name}-%{version}.tar.lzma
@@ -168,6 +168,12 @@ cd tests/data/
 sed -i s/899\\\([0-9]\\\)/%{?__isa_bits}9\\1/ test*
 cd -
 
+# disable test 20 507 534 (problem with mercusuar.info)
+printf "20\n" >> tests/data/DISABLED
+printf "507\n" >> tests/data/DISABLED
+printf "534\n" >> tests/data/DISABLED
+printf "582\n" >> tests/data/DISABLED
+
 # disable test 1112 (#565305)
 printf "1112\n" >> tests/data/DISABLED
 
@@ -271,6 +277,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/aclocal/libcurl.m4
 
 %changelog
+* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> 7.29.0-13
+- Rebuilt for el6
+- disable test # 20 507 534 (problem with mercusuar.info)
+
 * Fri Oct 11 2013 Kamil Dudka <kdudka@redhat.com> 7.29.0-12
 - do not limit the speed of SCP upload on a fast connection
 
