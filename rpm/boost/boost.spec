@@ -1010,6 +1010,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/bjam.1*
 
 %changelog
+* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 1.48.0-11
+- Rebuilt for el6
+
 * Fri Apr 20 2012 Petr Machata <pmachata@redhat.com> - 1.48.0-11
 - Add hwloc-devel BR to work around a probable bug in openmpi-devel
   which fails to pull it in
