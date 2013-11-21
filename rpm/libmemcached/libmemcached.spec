@@ -174,6 +174,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 1.0.16-1
+- Rebuilt for el6
+
 * Mon Feb  4 2013 Remi Collet <remi@fedoraproject.org> - 1.0.16-1
 - update to 1.0.16
 - ignore test result for memaslap (XFAIL but PASS)
