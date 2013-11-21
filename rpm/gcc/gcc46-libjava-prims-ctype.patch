@@ -1,11 +1,7 @@
-2011-10-27  Jakub Jelinek  <jakub@redhat.com>
-
-	* prims.cc (__NO_CTYPE): For glibc define this before including
-	ctype.h.
-
---- libjava/prims.cc	2009-04-28 06:02:30.000000000 +0200
-+++ libjava/prims.cc	2011-10-27 12:57:42.748752380 +0200
-@@ -38,6 +38,14 @@ details.  */
+diff -uNr gcc-4.6.3-20120301.orig/libjava/prims.cc gcc-4.6.3-20120301/libjava/prims.cc
+--- gcc-4.6.3-20120301.orig/libjava/prims.cc	2012-03-06 16:40:54.402394000 +0700
++++ gcc-4.6.3-20120301/libjava/prims.cc	2013-11-21 21:08:55.082170623 +0700
+@@ -38,6 +38,14 @@
  #endif
  
  #ifndef DISABLE_GETENV_PROPERTIES
@@ -17,6 +13,6 @@
 +   version.  */
 +#define __NO_CTYPE 1
 +#endif
- #include <ctype.h>
  #include <java-props.h>
  #define PROCESS_GCJ_PROPERTIES process_gcj_properties()
+ #else

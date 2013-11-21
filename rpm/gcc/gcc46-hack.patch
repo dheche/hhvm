@@ -1,8 +1,45 @@
---- libada/Makefile.in.jj	2009-01-14 12:07:35.000000000 +0100
-+++ libada/Makefile.in	2009-01-15 14:25:33.000000000 +0100
-@@ -69,18 +69,40 @@ version := $(shell cat $(srcdir)/../gcc/
- libsubdir := $(libdir)/gcc/$(target_noncanonical)/$(version)$(MULTISUBDIR)
+diff -uNr gcc-4.6.3-20120301.orig/config-ml.in gcc-4.6.3-20120301/config-ml.in
+--- gcc-4.6.3-20120301.orig/config-ml.in	2010-11-20 03:25:49.658795000 +0700
++++ gcc-4.6.3-20120301/config-ml.in	2013-11-21 20:20:34.025844196 +0700
+@@ -516,6 +516,8 @@
+ 				ADAFLAGS="$(ADAFLAGS) $${flags}" \
+ 				prefix="$(prefix)" \
+ 				exec_prefix="$(exec_prefix)" \
++				mandir="$(mandir)" \
++				infodir="$(infodir)" \
+ 				GCJFLAGS="$(GCJFLAGS) $${flags}" \
+ 				GOCFLAGS="$(GOCFLAGS) $${flags}" \
+ 				CXXFLAGS="$(CXXFLAGS) $${flags}" \
+diff -uNr gcc-4.6.3-20120301.orig/gcc/ada/sem_util.adb gcc-4.6.3-20120301/gcc/ada/sem_util.adb
+--- gcc-4.6.3-20120301.orig/gcc/ada/sem_util.adb	2010-12-20 14:26:57.614932000 +0700
++++ gcc-4.6.3-20120301/gcc/ada/sem_util.adb	2013-11-21 20:18:40.110411685 +0700
+@@ -2527,7 +2527,11 @@
+          end if;
+ 
+       elsif Is_Entity_Name (A2) then
++
++         --  Triggered by -Wall
++         pragma Warnings (Off);
+          return Denotes_Same_Prefix (A2, A1);
++         pragma Warnings (On);
+ 
+       elsif Nkind_In (A1, N_Selected_Component, N_Indexed_Component, N_Slice)
+               and then
+@@ -4967,7 +4971,7 @@
+             Exp           : Node_Id;
+             Assn          : Node_Id;
+             Choice        : Node_Id;
+-            Comp_Type     : Entity_Id;
++            Comp_Type     : Entity_Id := Empty;
+             Is_Array_Aggr : Boolean;
+ 
+          begin
+diff -uNr gcc-4.6.3-20120301.orig/libada/Makefile.in gcc-4.6.3-20120301/libada/Makefile.in
+--- gcc-4.6.3-20120301.orig/libada/Makefile.in	2012-03-06 16:40:54.402394000 +0700
++++ gcc-4.6.3-20120301/libada/Makefile.in	2013-11-21 20:11:42.027155733 +0700
+@@ -72,18 +72,40 @@
  ADA_RTS_DIR=$(GCC_DIR)/ada/rts$(subst /,_,$(MULTISUBDIR))
+ ADA_RTS_SUBDIR=./rts$(subst /,_,$(MULTISUBDIR))
  
 +DEFAULTMULTIFLAGS :=
 +ifeq ($(MULTISUBDIR),)
@@ -45,7 +82,7 @@
          "TARGET_LIBGCC2_CFLAGS=$(TARGET_LIBGCC2_CFLAGS)" \
          "THREAD_KIND=$(THREAD_KIND)" \
          "TRACE=$(TRACE)" \
-@@ -91,7 +113,7 @@ LIBADA_FLAGS_TO_PASS = \
+@@ -94,7 +116,7 @@
          "exeext=.exeext.should.not.be.used " \
  	'CC=the.host.compiler.should.not.be.needed' \
  	"GCC_FOR_TARGET=$(CC)" \
@@ -53,44 +90,11 @@
 +        "CFLAGS=$(strip $(CFLAGS) $(DEFAULTMULTIFLAGS) $(WARN_CFLAGS))"
  
  # Rules to build gnatlib.
- .PHONY: gnatlib gnatlib-plain gnatlib-sjlj gnatlib-zcx gnatlib-shared oscons
---- gcc/ada/sem_util.adb	(revision 161677)
-+++ gcc/ada/sem_util.adb	(working copy)
-@@ -2246,7 +2246,11 @@
-          end if;
- 
-       elsif Is_Entity_Name (A2) then
-+
-+         --  Triggered by -Wall
-+         pragma Warnings (Off);
-          return Denotes_Same_Prefix (A2, A1);
-+         pragma Warnings (On);
- 
-       elsif Nkind_In (A1, N_Selected_Component, N_Indexed_Component, N_Slice)
-               and then
-@@ -4694,7 +4698,7 @@
-             Exp           : Node_Id;
-             Assn          : Node_Id;
-             Choice        : Node_Id;
--            Comp_Type     : Entity_Id;
-+            Comp_Type     : Entity_Id := Empty;
-             Is_Array_Aggr : Boolean;
- 
-          begin
---- config-ml.in.jj	2010-06-30 09:50:44.000000000 +0200
-+++ config-ml.in	2010-07-02 21:24:17.994211151 +0200
-@@ -516,6 +516,8 @@ multi-do:
- 				ADAFLAGS="$(ADAFLAGS) $${flags}" \
- 				prefix="$(prefix)" \
- 				exec_prefix="$(exec_prefix)" \
-+				mandir="$(mandir)" \
-+				infodir="$(infodir)" \
- 				GCJFLAGS="$(GCJFLAGS) $${flags}" \
- 				GOCFLAGS="$(GOCFLAGS) $${flags}" \
- 				CXXFLAGS="$(CXXFLAGS) $${flags}" \
---- libjava/Makefile.am.jj	2010-07-09 11:17:33.729604090 +0200
-+++ libjava/Makefile.am	2010-07-09 13:16:41.894375641 +0200
-@@ -710,7 +710,8 @@ if USE_LIBGCJ_BC
+ .PHONY: gnatlib gnatlib-plain gnatlib-sjlj gnatlib-zcx gnatlib-shared osconstool
+diff -uNr gcc-4.6.3-20120301.orig/libjava/Makefile.am gcc-4.6.3-20120301/libjava/Makefile.am
+--- gcc-4.6.3-20120301.orig/libjava/Makefile.am	2010-08-27 11:27:40.775868000 +0700
++++ gcc-4.6.3-20120301/libjava/Makefile.am	2013-11-21 20:23:38.196160534 +0700
+@@ -755,7 +755,8 @@
  ## later.
  	@echo Installing dummy lib libgcj_bc.so.1.0.0; \
  	rm $(DESTDIR)$(toolexeclibdir)/libgcj_bc.so; \
@@ -100,9 +104,10 @@
  	$(libgcj_bc_dummy_LINK) -xc /dev/null -Wl,-soname,libgcj_bc.so.1 \
  	-o $(DESTDIR)$(toolexeclibdir)/libgcj_bc.so.1.0.0 -lgcj || exit; \
  	rm $(DESTDIR)$(toolexeclibdir)/libgcj_bc.so.1; \
---- libjava/Makefile.in.jj	2010-07-09 11:17:34.000000000 +0200
-+++ libjava/Makefile.in	2010-07-09 13:18:07.542572270 +0200
-@@ -12665,7 +12665,8 @@ install-exec-hook: install-binPROGRAMS i
+diff -uNr gcc-4.6.3-20120301.orig/libjava/Makefile.in gcc-4.6.3-20120301/libjava/Makefile.in
+--- gcc-4.6.3-20120301.orig/libjava/Makefile.in	2011-02-05 15:32:56.477225000 +0700
++++ gcc-4.6.3-20120301/libjava/Makefile.in	2013-11-21 20:29:09.830325611 +0700
+@@ -12401,7 +12401,8 @@
  	install-libexecsubPROGRAMS
  @USE_LIBGCJ_BC_TRUE@	@echo Installing dummy lib libgcj_bc.so.1.0.0; \
  @USE_LIBGCJ_BC_TRUE@	rm $(DESTDIR)$(toolexeclibdir)/libgcj_bc.so; \

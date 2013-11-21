@@ -1,6 +1,6 @@
-%global DATE 20111027
-%global SVNREV 180561
-%global gcc_version 4.6.2
+%global DATE 20120301
+%global SVNREV 205213
+%global gcc_version 4.6.3
 # Note, gcc_release must be integer, if you want to add suffixes to
 # %{release}, append them after %{gcc_release} on Release: line.
 %global gcc_release 1
@@ -619,7 +619,7 @@ package or when debugging this package.
 
 %prep
 %setup -q -n gcc-%{version}-%{DATE}
-%patch0 -p0 -b .hack~
+%patch0 -p1 -b .hack~
 %patch2 -p0 -b .c++-builtin-redecl~
 %patch4 -p0 -b .java-nomulti~
 %patch5 -p0 -b .ppc32-retaddr~
@@ -641,7 +641,7 @@ package or when debugging this package.
 %patch18 -p0 -b .ppl-0.10~
 %endif
 %patch19 -p0 -b .pr47858~
-%patch20 -p0 -b .libjava-prims-ctype~
+%patch20 -p1 -b .libjava-prims-ctype~
 
 %if 0%{?_enable_debug_packages}
 cat > split-debuginfo.sh <<\EOF
@@ -705,7 +705,7 @@ tar xzf %{SOURCE4}
 tar xjf %{SOURCE10}
 %endif
 
-sed -i -e 's/4\.6\.3/4.6.2/' gcc/BASE-VER
+sed -i -e 's/4\.6\.3/4.6.3/' gcc/BASE-VER
 echo 'Red Hat %{version}-%{gcc_release}' > gcc/DEV-PHASE
 
 %if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
@@ -2468,8 +2468,9 @@ fi
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/plugin
 
 %changelog
-* Tue Nov 19 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 4.6.2-1
-- rebuilt for el6
+* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 4.6.3-1
+- Update to 4.6.3
+- Rebuilt for el6
 
 * Thu Oct 27 2011 Jakub Jelinek <jakub@redhat.com> 4.6.2-1
 - update from the 4.6 branch
