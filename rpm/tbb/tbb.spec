@@ -143,6 +143,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %doc %{source_5}
 
 %changelog
+* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 4.0-9.20130314
+- Rebuilt for el6
+
 * Thu Oct  3 2013 Petr Machata <pmachata@redhat.com> - 4.0-9.20130314
 - Fix %%install to also install include files that are not named *.h
 
