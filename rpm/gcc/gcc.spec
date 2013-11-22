@@ -994,6 +994,7 @@ tar cf - -T libjava-classes.list | bzip2 -9 > $RPM_SOURCE_DIR/libjava-classes-%{
 %endif
 
 %install
+export QA_RPATHS=$[ 0x0020 ]
 rm -fr %{buildroot}
 
 cd obj-%{gcc_target_platform}
