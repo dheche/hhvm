@@ -1,6 +1,6 @@
 Name:           glog
-Version:        0.3.0
-Release:        6%{?dist}
+Version:        0.3.3
+Release:        1%{?dist}
 Summary:        A C++ application logging library
 
 Group:          System Environment/Libraries
@@ -67,8 +67,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 0.3.0-6
-- Rebuilt for el6
+* Sat Nov 23 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 0.3.3-1
+- Update to 0.3.3
 
 * Wed Feb 13 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.3.0-6
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
