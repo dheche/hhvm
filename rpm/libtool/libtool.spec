@@ -1,9 +1,9 @@
-%define gcc_version 4.6.2
+%define gcc_version 4.6.3
 
 Summary: The GNU Portable Library Tool
 Name:    libtool
 Version: 2.2.6
-Release: 15.6%{?dist}
+Release: 15.7%{?dist}
 License: GPLv2+ and LGPLv2+ and GFDL
 Group:   Development/Tools
 Source:  http://ftp.gnu.org/gnu/libtool/libtool-%{version}b.tar.lzma
@@ -146,6 +146,9 @@ fi
 
 
 %changelog
+* Sat Nov 23 2013 Teguh Dwicaksana <dheche@fedoraproject.org> 2.2.6-15.7
+- Rebuilt for gcc 4.6.3
+
 * Wed Nov 20 2013 Teguh Dwicaksana <dheche@fedoraproject.org> 2.2.6-15.6
 - Rebuilt for gcc 4.6.2
 
