@@ -96,7 +96,7 @@ fi
 %dir %{_sysconfdir}/hhvm/%{name}
 %config(noreplace) %{_sysconfdir}/hhvm/%{name}
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%config(noreplace) %{_sysconfdir}/sysconfig/profile.d/hhvm.sh
+%config(noreplace) %{_sysconfdir}/profile.d/hhvm.sh
 %{_initddir}/%{name}
 %{_bindir}/hhvm
 %{_bindir}/hphpize
