@@ -11,7 +11,7 @@
 %else
 %global build_ada 0
 %endif
-%global build_java 1
+%global build_java 0
 %ifarch %{ix86} x86_64
 %global build_go 1
 %else
