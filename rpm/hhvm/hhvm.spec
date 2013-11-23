@@ -55,6 +55,16 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
+# Install hhvm lib
+%{__mkdir} -p %{buildroot}%{_libdir}/hhvm
+%{__cp} -r hphp/* %{buildroot}%{_libdir}/hhvm
+%{__rm} -rf %{buildroot}%{_libdir}/hhvm/hhvm
+%{__rm} -rf %{buildroot}%{_libdir}/hhvm/doc
+find %{buildroot}%{_libdir}/hhvm -type f -name \*.cpp -o -name \*.h -o -name \*.o -o -name \*.c | xargs rm -f
+find %{buildroot}%{_libdir}/hhvm -type d -name CMake | xargs rm -rf
+find %{buildroot}%{_libdir}/hhvm -type d -name CMakeFiles | xargs rm -rf
+find %{buildroot}%{_libdir}/hhvm -type d -empty | xargs rm -rf
+
 # Install initscript, sysconfig and hhvm configuration
 %{__install} -p -D -m 0755 %{SOURCE1} %{buildroot}%{_initddir}/%{name}
 %{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/hhvm/hhvm.hdf
@@ -93,10 +103,12 @@ fi
 %dir %{_var}/log/%{name}
 
 %defattr(-,root,root,-)
-%dir %{_sysconfdir}/hhvm/%{name}
-%config(noreplace) %{_sysconfdir}/hhvm/%{name}
+%dir %{_sysconfdir}/hhvm
+%dir %{_libdir}/%{name}
+%config(noreplace) %{_sysconfdir}/hhvm/hhvm.hdf
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %config(noreplace) %{_sysconfdir}/profile.d/hhvm.sh
+%{_libdir}/hhvm/*
 %{_initddir}/%{name}
 %{_bindir}/hhvm
 %{_bindir}/hphpize
