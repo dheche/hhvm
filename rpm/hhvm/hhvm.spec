@@ -22,9 +22,8 @@ BuildRequires:	libmcrypt-devel >= 2.5.8, libdwarf-devel >= 20130729
 BuildRequires:	mysql-devel libxml2-devel libicu-devel
 BuildRequires:	oniguruma-devel readline-devel libc-client-devel pam-devel
 BuildRequires:	libcap-devel libedit-devel pcre-devel gd-devel sqlite-devel
-#BuildRequires:	inotify-tools-devel 
+BuildRequires:	inotify-tools-devel 
 BuildRequires:	boost-devel >= 1.48, libmemcached-devel >= 0.39 
-#BuildRequires:	boost-devel >= 1.48
 Requires:       glog >= 0.3.3, jemalloc >= 3.0, tbb >= 4.0
 Requires:		libmcrypt >= 2.5.8, libdwarf >= 20130729
 Requires:		boost >= 1.48, libmemcached >= 0.39
@@ -47,7 +46,8 @@ modphp.
 %build
 export HPHP_HOME=`pwd`
 export CPLUS_INCLUDE_PATH=/usr/include/libdwarf
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr \
+	-DLIBINOTIFY_LIBRARY=/usr/lib64/libinotifytools.so.0 .
 make %{?_smp_mflags}
 
 
