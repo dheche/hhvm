@@ -13,6 +13,7 @@ Source0:        https://github.com/facebook/hhvm/archive/HHVM-%{version}.tar.gz
 Source1:	hhvm.initscript
 Source2:	hhvm.hdf
 Source3:	hhvm.sysconfig
+Source4:	hhvm.bash_profile
 
 BuildRequires:  gcc >= 4.6.3, cmake >= 2.8.5, libevent-devel >= 1.4 
 BuildRequires:	libcurl-devel >= 7.29 
@@ -58,6 +59,7 @@ make install DESTDIR=$RPM_BUILD_ROOT
 %{__install} -p -D -m 0755 %{SOURCE1} %{buildroot}%{_initddir}/%{name}
 %{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/hhvm/%{name}
 %{__install} -p -D -m 0644 %{SOURCE3} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
+%{__install} -p -D -m 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/profile.d/hhvm.sh
 
 # Create default directory
 %{__mkdir} -p %{buildroot}%{_var}/run/%{name}
@@ -94,6 +96,7 @@ fi
 %dir %{_sysconfdir}/hhvm/%{name}
 %config(noreplace) %{_sysconfdir}/hhvm/%{name}
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
+%config(noreplace) %{_sysconfdir}/sysconfig/profile.d/hhvm.sh
 %{_initddir}/%{name}
 %{_bindir}/hhvm
 %{_bindir}/hphpize
