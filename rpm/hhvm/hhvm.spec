@@ -57,7 +57,7 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 # Install initscript, sysconfig and hhvm configuration
 %{__install} -p -D -m 0755 %{SOURCE1} %{buildroot}%{_initddir}/%{name}
-%{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/hhvm/%{name}
+%{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/hhvm/hhvm.hdf
 %{__install} -p -D -m 0644 %{SOURCE3} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 %{__install} -p -D -m 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/profile.d/hhvm.sh
 

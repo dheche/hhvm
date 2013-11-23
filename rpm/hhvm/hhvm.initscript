@@ -55,7 +55,7 @@ case "$1" in
         stop
         ;;
   status)
-        status -p ${pidfile} $httpd
+        status -p ${PID} $HHVM
         RETVAL=$?
         ;;
   restart)
