@@ -57,6 +57,8 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 # Install hhvm lib
 %{__mkdir} -p %{buildroot}%{_libdir}/hhvm
+%{__mkdir} -p %{buildroot}%{_libdir}/hhvm/bin
+%{__cp} bin/systemlib.php %{buildroot}%{_libdir}/hhvm/bin
 %{__cp} -r hphp/* %{buildroot}%{_libdir}/hhvm
 %{__rm} -rf %{buildroot}%{_libdir}/hhvm/hhvm
 %{__rm} -rf %{buildroot}%{_libdir}/hhvm/doc
@@ -107,7 +109,7 @@ fi
 %dir %{_libdir}/%{name}
 %config(noreplace) %{_sysconfdir}/hhvm/hhvm.hdf
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%config(noreplace) %{_sysconfdir}/profile.d/hhvm.sh
+%{_sysconfdir}/profile.d/hhvm.sh
 %{_libdir}/hhvm/*
 %{_initddir}/%{name}
 %{_bindir}/hhvm
