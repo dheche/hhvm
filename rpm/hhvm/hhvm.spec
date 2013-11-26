@@ -7,13 +7,13 @@ Release:        1%{?dist}
 Summary:        HipHop VM (HHVM) is a virtual machine for executing programs written in PHP
 
 Group:          Development/Compiler
-License:        PHP/Apache
+License:        PHP/Zend
 URL:            http://hhvm.com
 Source0:        https://github.com/facebook/hhvm/archive/HHVM-%{version}.tar.gz
 Source1:	hhvm.initscript
 Source2:	hhvm.hdf
 Source3:	hhvm.sysconfig
-Source4:	hhvm.bash_profile
+#Source4:	hhvm.bash_profile
 
 BuildRequires:  gcc >= 4.6.3, cmake >= 2.8.5, libevent-devel >= 1.4 
 BuildRequires:	libcurl-devel >= 7.29 
@@ -109,7 +109,6 @@ fi
 %dir %{_libdir}/%{name}
 %config(noreplace) %{_sysconfdir}/hhvm/hhvm.hdf
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%{_sysconfdir}/profile.d/hhvm.sh
 %{_libdir}/hhvm/*
 %{_initddir}/%{name}
 %{_bindir}/hhvm
