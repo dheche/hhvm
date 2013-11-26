@@ -2,8 +2,8 @@
 %define hhvm_user hhvm
 
 Name:           hhvm
-Version:        2.2.0
-Release:        1%{?dist}
+Version:        2.3.0
+Release:        0.1%{?dist}
 Summary:        HipHop VM (HHVM) is a virtual machine for executing programs written in PHP
 
 Group:          Development/Compiler
@@ -39,7 +39,7 @@ HipHop is most commonly run as a standalone server, replacing both Apache and
 modphp.
 
 %prep
-%setup -q -n hhvm
+%setup -q -n %{name}-%{version}
 
 
 %build
@@ -104,5 +104,5 @@ fi
 
 
 %changelog
-* Sat Nov 23 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.2.0-1
+* Sat Nov 23 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.1
 - Initial built for el6
