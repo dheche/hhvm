@@ -371,6 +371,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_datadir}/java/*.jar
 
 %changelog
+* Tue Nov 26 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 5.2.36-1
+- Rebuilt for el6
+
 * Tue Sep 20 2011 Jindrich Novy <jnovy@redhat.com> 5.2.36-1
 - update to 5.2.36,
   http://download.oracle.com/otndocs/products/berkeleydb/html/changelog_5_2.html#id3647664
