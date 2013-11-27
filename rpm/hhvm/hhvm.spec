@@ -1,5 +1,8 @@
 %define hhvm_dir %{_var}/hhvm
 %define hhvm_user hhvm
+%global _enable_debug_package 0
+%global debug_package %{nil}
+%global __os_install_post /usr/lib/rpm/brp-compress %{nil}
 
 Name:           hhvm
 Version:        2.3.0
@@ -51,6 +54,7 @@ make %{?_smp_mflags}
 
 
 %install
+export DONT_STRIP=1
 rm -rf $RPM_BUILD_ROOT
 %{__install} -p -D -m 0755 hphp/hhvm/hhvm %{buildroot}%{_bindir}/hhvm
 %{__install} -p -D -m 0755 hphp/tools/hphpize/hphpize %{buildroot}%{_bindir}/hphpize
