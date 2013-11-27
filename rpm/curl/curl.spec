@@ -277,7 +277,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/aclocal/libcurl.m4
 
 %changelog
-* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> 7.29.0-13
+* Wed Nov 20 2013 Teguh Dwicaksana <dheche@fedoraproject.org> 7.29.0-13
 - Rebuilt for el6
 - disable test # 20 507 534 (problem with mercusuar.info)
 
