@@ -1,0 +1,21 @@
+diff -up rpm-4.9.1.3/installplatform.ppc64p7-platform rpm-4.9.1.3/installplatform
+--- rpm-4.9.1.3/installplatform.ppc64p7-platform	2012-04-25 14:25:25.554388624 +0200
++++ rpm-4.9.1.3/installplatform	2012-04-30 17:21:45.013388696 +0200
+@@ -22,7 +22,7 @@ case "$arch" in
+   arm*) SUBSTS='s_arm_arm_ s_arm_armv3l_ s_arm_armv4l_ s_arm_armv4tl_ s_arm_armv5tel_ s_arm_armv5tejl_ s_arm_armv6l_ s_arm_armv7l_ s_arm_armv7hl_ s_arm_armv7hnl_' ;;
+   sh4*) SUBSTS='s_sh4_sh4_ s_sh4_sh4a_' ;;
+   sparc*) SUBSTS='s_sparc\(64\|64v\|v9v\|v9\)_sparc_ s_sparc64_sparcv9_;s_sparc\([^v]\|$\)_sparcv9\1_ s_sparcv9_sparc64_;s_sparc\([^6]\|$\)_sparc64\1_' ;;
+-  powerpc*|ppc*) SUBSTS='s_ppc64_ppc_ s_ppc\([^6ip]\|$\)_ppc64\1_ s_ppc\([^6ip]\|$\)_ppciseries_ s_ppc\([^6ip]\|$\)_ppcpseries_ s_ppc\([^6ip]\|$\)_ppc64iseries_ s_ppc\([^6ip]\|$\)_ppc64pseries_' ;;
++  powerpc*|ppc*) SUBSTS='s_ppc64_ppc_ s_ppc\([^6ip]\|$\)_ppc64\1_ s_ppc\([^6ip]\|$\)_ppciseries_ s_ppc\([^6ip]\|$\)_ppcpseries_ s_ppc\([^6ip]\|$\)_ppc64iseries_ s_ppc\([^6ip]\|$\)_ppc64pseries_ s_ppc\([^6ip]\|$\)_ppc64p7_' ;;
+   s390*) SUBSTS='s_s390x_s390_ s_s390\([^x]\|$\)_s390x\1_' ;;
+   x86_64|amd64|ia32e) SUBSTS='s,x86_64,x86_64, s,x86_64,ia32e, s,x86_64,amd64, s,x86_64,i386, s,x86_64,i486, s,x86_64,i586, s,x86_64,i686, s,x86_64,pentium3, s,x86_64,pentium4, s,x86_64,athlon, s,x86_64,geode,' ;;
+   *) SUBSTS=y___ ;;
+@@ -48,7 +48,7 @@ for SUBST in $SUBSTS ; do
+   case "${ARCH}-${OS}" in
+     sparc64*-linux) LIB=lib64 ;;
+     s390x-linux) LIB=lib64 ;;
+-    ppc64-linux|powerpc64-linux) LIB=lib64 ;;
++    ppc64-linux|ppc64p7-linux|powerpc64-linux) LIB=lib64 ;;
+     x86_64-linux|amd64-linux|ia32e-linux) LIB=lib64 ;;
+     *) LIB=lib;;
+   esac

@@ -1,0 +1,13 @@
+diff --git a/tools/debugedit.c b/tools/debugedit.c
+index 89d0428..dc424d3 100644
+--- a/tools/debugedit.c
++++ b/tools/debugedit.c
+@@ -1586,7 +1586,7 @@ main (int argc, char *argv[])
+ 	  if (strcmp (name, ".stab") == 0)
+ 	    {
+ 	      fprintf (stderr, "Stabs debuginfo not supported: %s\n", file);
+-	      exit (1);
++	      break;
+ 	    }
+ 	  if (strcmp (name, ".debug_info") == 0)
+ 	    edit_dwarf2 (dso);

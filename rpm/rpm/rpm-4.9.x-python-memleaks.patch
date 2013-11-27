@@ -1,0 +1,66 @@
+commit 59807943af5c10c892b239f11b8fafb209254a4a
+Author: David Malcolm <dmalcolm@redhat.com>
+Date:   Thu Dec 15 22:22:56 2011 -0500
+
+    fix memory leaks in invocations of PyObject_Call
+    
+    - Various functions in the Python bindings have expressions of the form:
+    
+      PyObject_Call(callable,
+                      Py_BuildValue(fmtstring, ...), NULL);
+    
+      This leaks memory for the case when Py_BuildValue succeeds (it returns a
+      new reference, which is never freed; PyObject_Call doesn't steal the
+      reference): the argument tuple and all of its components will not be
+      freed (until the process exits).
+    
+    Signed-off-by: Ales Kozumplik <akozumpl@redhat.com>
+
+diff --git a/python/header-py.c b/python/header-py.c
+index 96cf200..cef457b 100644
+--- a/python/header-py.c
++++ b/python/header-py.c
+@@ -295,8 +295,7 @@ static PyObject * hdrWrite(hdrObject *s, PyObject *args, PyObject *kwds)
+  */
+ static PyObject * hdr_fiFromHeader(PyObject * s, PyObject * args, PyObject * kwds)
+ {
+-    return PyObject_Call((PyObject *) &rpmfi_Type,
+-			 Py_BuildValue("(O)", s), NULL);
++    return PyObject_CallFunctionObjArgs((PyObject *) &rpmfi_Type, s, NULL);
+ }
+ 
+ /* Backwards compatibility. Flags argument is just a dummy and discarded. */
+@@ -309,14 +308,14 @@ static PyObject * hdr_dsFromHeader(PyObject * s, PyObject * args, PyObject * kwd
+             tagNumFromPyObject, &tag, &flags))
+         return NULL;
+ 
+-    return PyObject_Call((PyObject *) &rpmds_Type,
+-			 Py_BuildValue("(Oi)", s, tag), NULL);
++    return PyObject_CallFunction((PyObject *) &rpmds_Type,
++                                 "(Oi)", s, tag);
+ }
+ 
+ static PyObject * hdr_dsOfHeader(PyObject * s)
+ {
+-    return PyObject_Call((PyObject *) &rpmds_Type,
+-			Py_BuildValue("(Oi)", s, RPMTAG_NEVR), NULL);
++    return PyObject_CallFunction((PyObject *) &rpmds_Type,
++                                 "(Oi)", s, RPMTAG_NEVR);
+ }
+ 
+ static long hdr_hash(PyObject * h)
+diff --git a/python/rpmfd-py.c b/python/rpmfd-py.c
+index 89a70cd..1150aa1 100644
+--- a/python/rpmfd-py.c
++++ b/python/rpmfd-py.c
+@@ -23,8 +23,8 @@ int rpmfdFromPyObject(PyObject *obj, rpmfdObject **fdop)
+ 	Py_INCREF(obj);
+ 	fdo = (rpmfdObject *) obj;
+     } else {
+-	fdo = (rpmfdObject *) PyObject_Call((PyObject *)&rpmfd_Type,
+-			    		    Py_BuildValue("(O)", obj), NULL);
++	fdo = (rpmfdObject *) PyObject_CallFunctionObjArgs((PyObject *)&rpmfd_Type,
++                                                           obj, NULL);
+     }
+     if (fdo == NULL) return 0;
+ 

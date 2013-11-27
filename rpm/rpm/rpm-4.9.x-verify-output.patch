@@ -1,0 +1,62 @@
+commit 4e207bfdfce434a6484babc14fe86aeadeec5329
+Author: Panu Matilainen <pmatilai@redhat.com>
+Date:   Tue Feb 28 10:31:28 2012 +0200
+
+    Unbreak rpm -V output (RhBug:797964)
+    
+    - Commit ac0ab016a5ec31e65eb0c0910a5a6f1199aae3e7 unintentionally
+      changed the order of the problems shown in verify strings due to
+      a dumb oversight (greetings to self, duh). In other words, this
+      fixes a verify output regression in rpm >= 4.9.x by restoring
+      the long-standing (and documented) order of the verify output chars.
+    - Also fix the testcase which unfortunately was only added after
+      the output-changing commit so it didn't catch the breakage either :-/
+
+diff --git a/lib/verify.c b/lib/verify.c
+index 35612fe..1edb27f 100644
+--- a/lib/verify.c
++++ b/lib/verify.c
+@@ -292,14 +292,14 @@ char * rpmVerifyString(uint32_t verifyResult, const char *pad)
+ {
+     char *fmt = NULL;
+     rasprintf(&fmt, "%s%s%s%s%s%s%s%s%s",
+-		_verifyfile(RPMVERIFY_FILEDIGEST, "5", pad),
+ 		_verify(RPMVERIFY_FILESIZE, "S", pad),
+-		_verifylink(RPMVERIFY_LINKTO, "L", pad),
+-		_verify(RPMVERIFY_MTIME, "T", pad),
++		_verify(RPMVERIFY_MODE, "M", pad),
++		_verifyfile(RPMVERIFY_FILEDIGEST, "5", pad),
+ 		_verify(RPMVERIFY_RDEV, "D", pad),
++		_verifylink(RPMVERIFY_LINKTO, "L", pad),
+ 		_verify(RPMVERIFY_USER, "U", pad),
+ 		_verify(RPMVERIFY_GROUP, "G", pad),
+-		_verify(RPMVERIFY_MODE, "M", pad),
++		_verify(RPMVERIFY_MTIME, "T", pad),
+ 		_verify(RPMVERIFY_CAPS, "P", pad));
+ 		
+     return fmt;
+diff --git a/tests/rpmverify.at b/tests/rpmverify.at
+index dd23a4a..77d6bfe 100644
+--- a/tests/rpmverify.at
++++ b/tests/rpmverify.at
+@@ -79,7 +79,7 @@ dd if=/dev/zero of="${RPMTEST}"/usr/local/bin/hello \
+ runroot rpm -Va --nodeps --nouser --nogroup
+ ],
+ [1],
+-[5..T...M.    /usr/local/bin/hello
++[.M5....T.    /usr/local/bin/hello
+ missing   d /usr/share/doc/hello-1.0/FAQ
+ ],
+ [])
+diff -up rpm-4.9.1.2/tests/rpmtests.verify-output rpm-4.9.1.2/tests/rpmtests
+--- rpm-4.9.1.2/tests/rpmtests.verify-output	2012-03-07 12:20:31.889830559 +0200
++++ rpm-4.9.1.2/tests/rpmtests	2012-03-07 12:21:01.651753987 +0200
+@@ -3619,7 +3619,7 @@ runroot rpm -Va --nodeps --nouser --nogr
+ at_status=$? at_failed=false
+ $at_check_filter
+ at_fn_diff_devnull "$at_stderr" || at_failed=:
+-echo >>"$at_stdout"; $as_echo "5..T...M.    /usr/local/bin/hello
++echo >>"$at_stdout"; $as_echo ".M5....T.    /usr/local/bin/hello
+ missing   d /usr/share/doc/hello-1.0/FAQ
+ " | \
+   $at_diff - "$at_stdout" || at_failed=:

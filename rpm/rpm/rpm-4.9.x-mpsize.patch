@@ -1,0 +1,28 @@
+commit d8cd36058b528f56bd579204426143be1e1eac6d
+Author: Panu Matilainen <pmatilai@redhat.com>
+Date:   Wed Feb 8 10:56:09 2012 +0200
+
+    Switch back to former, much smaller BDB memory pool size (RhBug:752897)
+    
+    - A larger cache is beneficial in various scenarios, but triggers
+      horrible worst-case performance under memory pressure (or so my
+      current theory goes, there might be other factors too). The
+      worst-case degration is orders of magnitude bigger than the best-case
+      improvements from the larger cache and for many use-cases doesn't
+      make a whole lot difference.  We could/should tune the cache with
+      priorizing indexes and all, and perhaps dynamically select the
+      cache size but for now, the 1Mb cache size is known to "just work".
+
+diff --git a/macros.in b/macros.in
+index f835fec..6034721 100644
+--- a/macros.in
++++ b/macros.in
+@@ -535,7 +535,7 @@ print (t)\
+ #
+ 
+ # Misc BDB tuning options
+-%__dbi_other			mp_mmapsize=128Mb mp_size=64Mb
++%__dbi_other			mp_mmapsize=128Mb mp_size=1Mb
+ 
+ %_dbi_config			%{?__dbi_other}
+ 

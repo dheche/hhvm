@@ -1,0 +1,21 @@
+commit bf92b843fabd6c9881b19efb0cae1578d16e4f7b
+Author: Panu Matilainen <pmatilai@redhat.com>
+Date:   Tue Feb 28 12:18:10 2012 +0200
+
+    Don't process spec %include in false branch of %if clauses (RhBug:782970)
+    (backported from commit 9defc922e971d98203890f1557ab951ec94f2a3f)
+
+diff --git a/build/parseSpec.c b/build/parseSpec.c
+index 01620bd..01c3c08 100644
+--- a/build/parseSpec.c
++++ b/build/parseSpec.c
+@@ -374,7 +374,8 @@ int readLine(rpmSpec spec, int strip)
+ 	spec->readStack = spec->readStack->next;
+ 	free(rl);
+ 	spec->line[0] = '\0';
+-    } else if (rstreqn("%include", s, sizeof("%include")-1)) {
++    } else if (spec->readStack->reading &&
++	       rstreqn("%include", s, sizeof("%include")-1)) {
+ 	char *fileName, *endFileName, *p;
+ 
+ 	s += 8;

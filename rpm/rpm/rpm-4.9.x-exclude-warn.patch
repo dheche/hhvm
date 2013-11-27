@@ -1,0 +1,59 @@
+commit cce686b2129e4e8dc27f1a640f7c4746f9ffb032
+Author: Panu Matilainen <pmatilai@redhat.com>
+Date:   Sun Oct 23 13:59:46 2011 +0300
+
+    Warn but don't fail the build on missing excluded files (RhBug:745629)
+    
+    - If a file/directory is not to be packaged, there's not a whole lot
+      point making the build fail if its missing. In case exclude is
+      used to leave certain files to sub-packages, the sub-package file
+      lists will catch out missing files that are really missing as a
+      result of actual build failure or such (except perhaps for some
+      glob cases but missing files can go unnoticed in those cases anyway)
+    - backported from commit 084a00bf51a941ec85c094a436bda401fccf7d3a
+
+diff --git a/build/files.c b/build/files.c
+index e0747f8..a520410 100644
+--- a/build/files.c
++++ b/build/files.c
+@@ -1393,12 +1393,19 @@ static rpmRC addFile(FileList fl, const char * diskPath,
+ 		    statp->st_mtime = now;
+ 		    statp->st_ctime = now;
+ 		} else {
++		    int rc = RPMRC_FAIL;
++		    int lvl = RPMLOG_ERR;
+ 		    const char *msg = fl->isDir ?
+ 					    _("Directory not found: %s\n") :
+ 					    _("File not found: %s\n");
+-		    rpmlog(RPMLOG_ERR, msg, diskPath);
+-		    fl->processingFailed = 1;
+-		    return RPMRC_FAIL;
++		    if (fl->currentFlags & RPMFILE_EXCLUDE) {
++			lvl = RPMLOG_WARNING;
++			rc = RPMRC_OK;
++		    } else {
++			fl->processingFailed = 1;
++		    }
++		    rpmlog(lvl, msg, diskPath);
++		    return rc;
+ 		}
+ 	    }
+ 	}
+@@ -1702,11 +1707,15 @@ static rpmRC processBinaryFile(Package pkg, FileList fl, const char * fileName)
+ 	    }
+ 	    argvFree(argv);
+ 	} else {
++	    int lvl = RPMLOG_WARNING;
+ 	    const char *msg = (fl->isDir) ?
+ 				_("Directory not found by glob: %s\n") :
+ 				_("File not found by glob: %s\n");
+-	    rpmlog(RPMLOG_ERR, msg, diskPath);
+-	    rc = RPMRC_FAIL;
++	    if (!(fl->currentFlags & RPMFILE_EXCLUDE)) {
++		lvl = RPMLOG_ERR;
++		rc = RPMRC_FAIL;
++	    }
++	    rpmlog(lvl, msg, diskPath);
+ 	    goto exit;
+ 	}
+     } else {

@@ -1,0 +1,43 @@
+commit 7d88d5e54a9c3fa2b7fb443921c8adb799051784
+Author: Panu Matilainen <pmatilai@redhat.com>
+Date:   Wed Feb 1 17:48:20 2012 +0200
+
+    Don't free up file info sets on transaction test-runs
+    
+    - We'd like to get rid of the potentially huge amounts of memory
+      eaten by file info sets as early as possible, but when there's a
+      chance that we'll get called again with either added transacation
+      elements or on-disk changes, such as %pretrans changing something
+      underneath us, we need to (be able to) recalculate everything
+      from scratch. Only free up the memory when we know we dont need
+      it anymore, ie on an actual transaction run.
+    - This doesn't change anything for rpm itself, for yum and others
+      which do a separate test-transaction first, it means %pretrans
+      directory<->symlink replacement hacks and the like have a chance
+      of working again. I'm sure there's a bug filed on this somewhere but...
+    (cherry picked from commit cef18c94807af0935b7796c462aab8ed39f0f376)
+
+diff --git a/lib/transaction.c b/lib/transaction.c
+index 56ebc17..8d29ab9 100644
+--- a/lib/transaction.c
++++ b/lib/transaction.c
+@@ -1355,12 +1355,14 @@ static int rpmtsPrepare(rpmts ts)
+     if (rpmChrootOut())
+ 	rc = -1;
+ 
+-    /* File info sets, fp caches etc not needed beyond here, free 'em up. */
+-    pi = rpmtsiInit(ts);
+-    while ((p = rpmtsiNext(pi, 0)) != NULL) {
+-	rpmteSetFI(p, NULL);
++    /* On actual transaction, file info sets are not needed after this */
++    if (!(rpmtsFlags(ts) & (RPMTRANS_FLAG_TEST|RPMTRANS_FLAG_BUILD_PROBS))) {
++	pi = rpmtsiInit(ts);
++	while ((p = rpmtsiNext(pi, 0)) != NULL) {
++	    rpmteSetFI(p, NULL);
++	}
++	rpmtsiFree(pi);
+     }
+-    pi = rpmtsiFree(pi);
+ 
+ exit:
+     ht = rpmFpHashFree(ht);

@@ -1,0 +1,15 @@
+commit fb30c0aac8b3da8c75a8cb1578a719ce38db59eb
+Author: Panu Matilainen <pmatilai@redhat.com>
+Date:   Fri Nov 25 16:07:38 2011 +0200
+
+    Identify "font collection" (data etc) as fonts also (RhBug:757105)
+
+diff --git a/fileattrs/font.attr b/fileattrs/font.attr
+index 5c4c78f..8c19383 100644
+--- a/fileattrs/font.attr
++++ b/fileattrs/font.attr
+@@ -1,3 +1,3 @@
+ %__font_provides	%{_rpmconfigdir}/fontconfig.prov
+ %__font_requires	%{nil}
+-%__font_magic		^.* [Ff]ont (program )?(text|data).*$
++%__font_magic		^.* [Ff]ont (program|collection )?(text|data).*$

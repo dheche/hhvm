@@ -1,0 +1,12 @@
+diff --git a/build/rpmfc.c b/build/rpmfc.c
+index 60ab0e3..5b6ddb5 100644
+--- a/build/rpmfc.c
++++ b/build/rpmfc.c
+@@ -557,6 +557,7 @@ static const struct rpmfcTokens_s rpmfcTokens[] = {
+ 
+   { "perl ",			RPMFC_INCLUDE },
+   { "Perl5 module source text", RPMFC_INCLUDE },
++  { "Perl script",		RPMFC_INCLUDE },
+   { "python ",			RPMFC_INCLUDE },
+ 
+   { "libtool library ",         RPMFC_INCLUDE },
