@@ -13,7 +13,7 @@ Source0:        https://github.com/facebook/hhvm/archive/HHVM-%{version}.tar.gz
 Source1:	hhvm.initscript
 Source2:	hhvm.hdf
 Source3:	hhvm.sysconfig
-
+Patch0:		hhvm-disable_fastcgi.patch
 BuildRequires:  gcc >= 4.7.2, cmake >= 2.8.7, libevent-devel >= 1.4 
 BuildRequires:	libcurl-devel >= 7.29 
 BuildRequires:	glog-devel >= 0.3.3, jemalloc-devel >= 3.0, tbb-devel >= 4.0
@@ -40,7 +40,7 @@ modphp.
 
 %prep
 %setup -q -n %{name}-%{version}
-
+%patch0 -p1
 
 %build
 export HPHP_HOME=`pwd`
@@ -52,7 +52,9 @@ make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
+%{__install} -p -D -m 0755 hphp/hhvm/hhvm %{buildroot}%{_bindir}/hhvm
+%{__install} -p -D -m 0755 hphp/tools/hphpize/hphpize %{buildroot}%{_bindir}/hphpize
+
 
 # Install initscript, sysconfig and hhvm configuration
 %{__install} -p -D -m 0755 %{SOURCE1} %{buildroot}%{_initddir}/%{name}
@@ -62,6 +64,14 @@ make install DESTDIR=$RPM_BUILD_ROOT
 # Create default directory
 %{__mkdir} -p %{buildroot}%{_var}/run/%{name}
 %{__mkdir} -p %{buildroot}%{_var}/log/%{name}
+%{__mkdir} -p %{buildroot}%{_var}/hhvm
+
+# Cleanup
+%{__rm} -f %{buildroot}%{_includedir}/zip.h
+%{__rm} -f %{buildroot}%{_includedir}/zipconf.h
+%{__rm} -f %{buildroot}/usr/lib/libzip.a
+%{__rm} -f %{buildroot}/usr/lib/libzip.so
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -87,15 +97,14 @@ fi
 
 %files
 %defattr(-,hhvm,hhvm,-)
+%dir %{_var}/hhvm
 %dir %{_var}/run/%{name}
 %dir %{_var}/log/%{name}
 
 %defattr(-,root,root,-)
 %dir %{_sysconfdir}/hhvm
-%dir %{_libdir}/%{name}
 %config(noreplace) %{_sysconfdir}/hhvm/hhvm.hdf
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%{_libdir}/hhvm/*
 %{_initddir}/%{name}
 %{_bindir}/hhvm
 %{_bindir}/hphpize
@@ -104,5 +113,5 @@ fi
 
 
 %changelog
-* Sat Nov 23 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.1
+* Tue Nov 26 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.1
 - Initial built for el6
