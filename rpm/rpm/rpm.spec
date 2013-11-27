@@ -479,6 +479,9 @@ exit 0
 %doc COPYING doc/librpm/html/*
 
 %changelog
+* Tue Nov 26 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 4.9.1.3-6
+- Rebuilt for el6
+
 * Thu May 03 2012 Phil Knirsch <pknirsch@redhat.com> 4.9.1.3-6
 - Arch macro for all supported PowerPC 64 processors (#818320)
 
