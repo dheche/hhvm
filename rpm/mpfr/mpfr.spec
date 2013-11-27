@@ -84,6 +84,9 @@ fi
 %{_infodir}/mpfr.info*
 
 %changelog
+* Tue Nov 26 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 3.1.1-2
+- Rebuilt for el6
+
 * Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.1.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
 
