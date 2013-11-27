@@ -3,7 +3,7 @@
 Summary: Create deltas between rpms
 Name: deltarpm
 Version: 3.5
-Release: 0.5.20090913git%{?dist}
+Release: 0.6.20090913git%{?dist}
 License: BSD
 Group: System Environment/Base
 URL: http://gitorious.org/deltarpm/deltarpm
@@ -15,6 +15,7 @@ URL: http://gitorious.org/deltarpm/deltarpm
 Source: %{name}-git-20090913.tar.bz2
 # Build with system zlib
 Patch0: deltarpm-system-zlib.patch
+Patch1: deltarpm-dso_link_change.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: bzip2-devel, xz-devel, rpm-devel, popt-devel
@@ -55,6 +56,7 @@ This package contains python bindings for deltarpm.
 %setup -q -n %{name}-git-20090913
 # Build with system zlib
 %patch0 -p1 -b .zlib
+%patch1 -p1 -b .dso
 
 %build
 %{__make} %{?_smp_mflags} CFLAGS="$RPM_OPT_FLAGS" \
@@ -104,6 +106,10 @@ This package contains python bindings for deltarpm.
 %{python_sitearch}/*
 
 %changelog
+* Tue Nov 26 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 3.5-0.6.20090913git
+- Rebuilt for rpm 4.9.1.3
+- Add DSO Link Patch, http://fedoraproject.org/wiki/UnderstandingDSOLinkChange
+
 * Mon Jan 11 2010 Panu Matilainen <pmatilai@redhat.com> 3.5-0.5.20090913git
 - rebuild for rpm 4.8.0
 - use %%global instead of %%define
