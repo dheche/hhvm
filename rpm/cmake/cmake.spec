@@ -7,8 +7,8 @@
 %define rcver %{nil}
 
 Name:           cmake
-Version:        2.8.5
-Release:        3%{?dist}
+Version:        2.8.7
+Release:        1%{?dist}
 Summary:        Cross-platform make system
 
 Group:          Development/Tools
@@ -17,7 +17,7 @@ URL:            http://www.cmake.org
 Source0:        http://www.cmake.org/files/v2.8/cmake-%{version}%{?rcver}.tar.gz
 Source2:        macros.cmake
 # Patch to find DCMTK in Fedora (bug #720140)
-Patch0:         cmake-dcmtk.patch
+#Patch0:         cmake-dcmtk.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -58,7 +58,7 @@ The %{name}-gui package contains the Qt based GUI for CMake.
 
 %prep
 %setup -q -n %{name}-%{version}%{?rcver}
-%patch0 -p1 -b .dcmtk
+#%patch0 -p1 -b .dcmtk
 
 
 %build
@@ -145,6 +145,7 @@ update-mime-database %{_datadir}/mime &> /dev/null || :
 %{_mandir}/man1/ctest.1.gz
 %{_datadir}/emacs/
 %{_libdir}/%{name}/
+%{_datadir}/aclocal/cmake.m4
 
 %if %{with gui}
 %files gui
@@ -159,6 +160,9 @@ update-mime-database %{_datadir}/mime &> /dev/null || :
 
 
 %changelog
+* Tue Nov 26 2013 Teguh Dwicaksana <dheche@fedoraproject.org - 2.8.7-1
+- Update to 2.8.7, since we need md5 subcommand
+
 * Wed Nov 20 2013 Teguh Dwicaksana <dheche@fedoraproject.org - 2.8.5-5
 - Rebuilt for el6
 
