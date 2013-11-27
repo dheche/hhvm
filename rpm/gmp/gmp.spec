@@ -5,8 +5,8 @@
 
 Summary: A GNU arbitrary precision library
 Name: gmp
-Version: 4.3.1
-Release: 7%{?dist}.2
+Version: 4.3.2
+Release: 1%{?dist}
 URL: http://gmplib.org/
 Source0: ftp://ftp.gnu.org/pub/gnu/gmp/gmp-%{version}.tar.bz2
 Source2: gmp.h
@@ -239,6 +239,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sat Nov 23 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 4.3.2-1
+- Update to 4.3.2
+
 * Fri Mar 02 2012 Peter Schiffer <pschiffe@redhat.com> - 4.3.1-7.el6_2.2
 - Related: #798771
   fixed FTBFS on some hosts
