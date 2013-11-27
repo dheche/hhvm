@@ -1,0 +1,62 @@
+2012-11-08  Jakub Jelinek  <jakub@redhat.com>
+
+	PR tree-optimization/55236
+	* fold-const.c (make_range_step) <case NEGATE_EXPR>: For -fwrapv
+	and signed ARG0_TYPE, force low and high to be non-NULL.
+
+	* gcc.dg/pr55236.c: New test.
+
+--- gcc/fold-const.c.jj	2012-11-07 11:24:34.000000000 +0100
++++ gcc/fold-const.c	2012-11-08 16:54:38.978339040 +0100
+@@ -3880,6 +3880,17 @@ make_range_step (location_t loc, enum tr
+       return arg0;
+ 
+     case NEGATE_EXPR:
++      /* If flag_wrapv and ARG0_TYPE is signed, make sure
++	 low and high are non-NULL, then normalize will DTRT.  */
++      if (!TYPE_UNSIGNED (arg0_type)
++	  && !TYPE_OVERFLOW_UNDEFINED (arg0_type))
++	{
++	  if (low == NULL_TREE)
++	    low = TYPE_MIN_VALUE (arg0_type);
++	  if (high == NULL_TREE)
++	    high = TYPE_MAX_VALUE (arg0_type);
++	}
++
+       /* (-x) IN [a,b] -> x in [-b, -a]  */
+       n_low = range_binop (MINUS_EXPR, exp_type,
+ 			   build_int_cst (exp_type, 0),
+--- gcc/testsuite/gcc.dg/pr55236.c.jj	2012-11-08 16:40:49.171781137 +0100
++++ gcc/testsuite/gcc.dg/pr55236.c	2012-11-08 16:41:20.044578919 +0100
+@@ -0,0 +1,31 @@
++/* PR tree-optimization/55236 */
++/* { dg-do run } */
++/* { dg-options "-O2 -fwrapv" } */
++
++extern void abort ();
++
++__attribute__((noinline, noclone)) void
++foo (int i)
++{
++  if (i > 0)
++    abort ();
++  i = -i;
++  if (i < 0)
++    return;
++  abort ();
++}
++
++__attribute__((noinline, noclone)) void
++bar (int i)
++{
++  if (i > 0 || (-i) >= 0)
++    abort ();
++}
++
++int
++main ()
++{
++  foo (-__INT_MAX__ - 1);
++  bar (-__INT_MAX__ - 1);
++  return 0;
++}

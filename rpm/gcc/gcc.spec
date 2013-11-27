@@ -1,9 +1,9 @@
-%global DATE 20120301
-%global SVNREV 205213
-%global gcc_version 4.6.3
+%global DATE 20121109
+%global SVNREV 193356
+%global gcc_version 4.7.2
 # Note, gcc_release must be integer, if you want to add suffixes to
 # %{release}, append them after %{gcc_release} on Release: line.
-%global gcc_release 1
+%global gcc_release 8
 %global _unpackaged_files_terminate_build 0
 %global multilib_64_archs sparc64 ppc64 s390x x86_64
 %ifarch %{ix86} x86_64 ia64 ppc ppc64 alpha
@@ -11,8 +11,8 @@
 %else
 %global build_ada 0
 %endif
-%global build_java 0
-%ifarch %{ix86} x86_64
+%global build_java 1
+%ifarch %{ix86} x86_64 ppc ppc64 s390 s390x %{arm}
 %global build_go 1
 %else
 %global build_go 0
@@ -22,7 +22,16 @@
 %else
 %global build_libquadmath 0
 %endif
+%ifarch %{ix86} x86_64 %{arm} alpha ppc ppc64
+%global build_libitm 1
+%else
+%global build_libitm 0
+%endif
+%if 0%{?rhel} >= 7
+%global build_cloog 0
+%else
 %global build_cloog 1
+%endif
 %global build_libstdcxx_docs 0
 # If you don't have already a usable gcc-java and libgcj for your arch,
 # do on some arch which has it rpmbuild -bc --with java_tar gcc.spec
@@ -52,7 +61,7 @@ License: GPLv3+ and GPLv3+ with exceptions and GPLv2+ with exceptions and LGPLv2
 Group: Development/Languages
 # The source for this package was pulled from upstream's vcs.  Use the
 # following commands to generate the tarball:
-# svn export svn://gcc.gnu.org/svn/gcc/branches/redhat/gcc-4_6-branch@%{SVNREV} gcc-%{version}-%{DATE}
+# svn export svn://gcc.gnu.org/svn/gcc/branches/redhat/gcc-4_7-branch@%{SVNREV} gcc-%{version}-%{DATE}
 # tar cf - gcc-%{version}-%{DATE} | bzip2 -9 > gcc-%{version}-%{DATE}.tar.bz2
 Source0: gcc-%{version}-%{DATE}.tar.bz2
 %global fastjar_ver 0.97
@@ -75,6 +84,9 @@ BuildRequires: binutils >= 2.20.51.0.2-12
 BuildRequires: glibc-static
 BuildRequires: zlib-devel, gettext, dejagnu, bison, flex, texinfo, sharutils
 BuildRequires: systemtap-sdt-devel >= 1.3
+%if %{build_go}
+BuildRequires: net-tools
+%endif
 # For VTA guality testing
 BuildRequires: gdb
 %if %{build_java}
@@ -140,6 +152,11 @@ Requires: glibc-devel >= 2.2.90-12
 # Make sure glibc supports TFmode long double
 Requires: glibc >= 2.3.90-35
 %endif
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
+%ifarch %{arm}
+Requires: glibc >= 2.16
+%endif
+%endif
 Requires: libgcc >= %{version}-%{release}
 Requires: libgomp = %{version}-%{release}
 %if !%{build_ada}
@@ -152,24 +169,27 @@ Requires: cloog-ppl >= 0.15
 Requires(post): /sbin/install-info
 Requires(preun): /sbin/install-info
 AutoReq: true
+Provides: bundled(libiberty)
 
-Patch0: gcc46-hack.patch
-Patch2: gcc46-c++-builtin-redecl.patch
-Patch4: gcc46-java-nomulti.patch
-Patch5: gcc46-ppc32-retaddr.patch
-Patch6: gcc46-pr33763.patch
-Patch7: gcc46-rh330771.patch
-Patch8: gcc46-i386-libgomp.patch
-Patch9: gcc46-sparc-config-detection.patch
-Patch10: gcc46-libgomp-omp_h-multilib.patch
-Patch11: gcc46-libtool-no-rpath.patch
-Patch12: gcc46-cloog-dl.patch
-Patch14: gcc46-pr38757.patch
-Patch15: gcc46-libstdc++-docs.patch
-Patch17: gcc46-no-add-needed.patch
-Patch18: gcc46-ppl-0.10.patch
-Patch19: gcc46-pr47858.patch
-Patch20: gcc46-libjava-prims-ctype.patch
+Patch0: gcc47-hack.patch
+Patch1: gcc47-c++-builtin-redecl.patch
+Patch2: gcc47-java-nomulti.patch
+Patch3: gcc47-ppc32-retaddr.patch
+Patch5: gcc47-rh330771.patch
+Patch6: gcc47-i386-libgomp.patch
+Patch7: gcc47-sparc-config-detection.patch
+Patch8: gcc47-libgomp-omp_h-multilib.patch
+Patch9: gcc47-libtool-no-rpath.patch
+Patch10: gcc47-cloog-dl.patch
+Patch11: gcc47-pr38757.patch
+Patch12: gcc47-libstdc++-docs.patch
+Patch13: gcc47-no-add-needed.patch
+Patch14: gcc47-ppl-0.10.patch
+Patch15: gcc47-libitm-fno-exceptions.patch
+Patch16: gcc47-rh837630.patch
+Patch17: gcc47-arm-hfp-ldso.patch
+Patch18: gcc47-pr55137.patch
+Patch19: gcc47-pr55236.patch
 
 Patch1000: fastjar-0.97-segfault.patch
 Patch1001: fastjar-0.97-len1.patch
@@ -193,11 +213,11 @@ Patch1004: fastjar-man.patch
 %endif
 
 %description
-The gcc package contains the GNU Compiler Collection version 4.6.
+The gcc package contains the GNU Compiler Collection version 4.7.
 You'll need this package in order to compile C code.
 
 %package -n libgcc
-Summary: GCC version 4.6 shared support library
+Summary: GCC version 4.7 shared support library
 Group: System Environment/Libraries
 Autoreq: false
 
@@ -296,7 +316,7 @@ Requires: libgfortran = %{version}-%{release}
 Requires: libquadmath = %{version}-%{release}
 Requires: libquadmath-devel = %{version}-%{release}
 %endif
-BuildRequires: gmp-devel >= 4.1.2-8, mpfr-devel >= 2.2.1, libmpc-devel >= 0.8-3
+BuildRequires: gmp-devel >= 4.1.2-8, mpfr-devel >= 2.2.1, libmpc-devel >= 0.8.1
 Requires(post): /sbin/install-info
 Requires(preun): /sbin/install-info
 Autoreq: true
@@ -398,6 +418,34 @@ Requires: libquadmath-devel = %{version}-%{release}
 This package contains static libraries for building Fortran programs
 using REAL*16 and programs using __float128 math.
 
+%package -n libitm
+Summary: The GNU Transactional Memory library
+Group: System Environment/Libraries
+Requires(post): /sbin/install-info
+Requires(preun): /sbin/install-info
+
+%description -n libitm
+This package contains the GNU Transactional Memory library
+which is a GCC transactional memory support runtime library.
+
+%package -n libitm-devel
+Summary: The GNU Transactional Memory support
+Group: Development/Libraries
+Requires: libitm = %{version}-%{release}
+Requires: gcc = %{version}-%{release}
+
+%description -n libitm-devel
+This package contains headers and support files for the
+GNU Transactional Memory library.
+
+%package -n libitm-static
+Summary: The GNU Transactional Memory static library
+Group: Development/Libraries
+Requires: libitm-devel = %{version}-%{release}
+
+%description -n libitm-static
+This package contains GNU Transactional Memory static libraries.
+
 %package java
 Summary: Java support for GCC
 Group: Development/Languages
@@ -461,6 +509,8 @@ The Java(tm) runtime library sources for use in Eclipse.
 %package -n cpp
 Summary: The C Preprocessor
 Group: Development/Languages
+Requires: filesystem >= 2.4.30
+Provides: /lib/cpp
 Requires(post): /sbin/install-info
 Requires(preun): /sbin/install-info
 Autoreq: true
@@ -573,7 +623,7 @@ This package contains static Go libraries.
 Summary: Support for compiling GCC plugins
 Group: Development/Languages
 Requires: gcc = %{version}-%{release}
-Requires: gmp-devel >= 4.1.2-8, mpfr-devel >= 2.2.1, libmpc-devel >= 0.8-3
+Requires: gmp-devel >= 4.1.2-8, mpfr-devel >= 2.2.1, libmpc-devel >= 0.8.1
 
 %description plugin-devel
 This package contains header files and other support files
@@ -619,29 +669,33 @@ package or when debugging this package.
 
 %prep
 %setup -q -n gcc-%{version}-%{DATE}
-%patch0 -p1 -b .hack~
-%patch2 -p0 -b .c++-builtin-redecl~
-%patch4 -p0 -b .java-nomulti~
-%patch5 -p0 -b .ppc32-retaddr~
-%patch6 -p0 -b .pr33763~
-%patch7 -p0 -b .rh330771~
-%patch8 -p0 -b .i386-libgomp~
-%patch9 -p0 -b .sparc-config-detection~
-%patch10 -p0 -b .libgomp-omp_h-multilib~
-%patch11 -p0 -b .libtool-no-rpath~
+%patch0 -p0 -b .hack~
+%patch1 -p0 -b .c++-builtin-redecl~
+%patch2 -p0 -b .java-nomulti~
+%patch3 -p0 -b .ppc32-retaddr~
+%patch5 -p0 -b .rh330771~
+%patch6 -p0 -b .i386-libgomp~
+%patch7 -p0 -b .sparc-config-detection~
+%patch8 -p0 -b .libgomp-omp_h-multilib~
+%patch9 -p0 -b .libtool-no-rpath~
 %if %{build_cloog}
-%patch12 -p0 -b .cloog-dl~
+%patch10 -p0 -b .cloog-dl~
 %endif
-%patch14 -p0 -b .pr38757~
+%patch11 -p0 -b .pr38757~
 %if %{build_libstdcxx_docs}
-%patch15 -p0 -b .libstdc++-docs~
+%patch12 -p0 -b .libstdc++-docs~
 %endif
-%patch17 -p0 -b .no-add-needed~
-%if 0%{?fedora} < 15 || 0%{?rhel} < 7
-%patch18 -p0 -b .ppl-0.10~
+%patch13 -p0 -b .no-add-needed~
+%if 0%{?fedora} < 15 && 0%{?rhel} < 7
+%patch14 -p0 -b .ppl-0.10~
 %endif
-%patch19 -p0 -b .pr47858~
-%patch20 -p1 -b .libjava-prims-ctype~
+%patch15 -p0 -b .libitm-fno-exceptions~
+%patch16 -p0 -b .rh837630~
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
+%patch17 -p0 -b .arm-hfp-ldso~
+%endif
+%patch18 -p0 -b .pr55137~
+%patch19 -p0 -b .pr55236~
 
 %if 0%{?_enable_debug_packages}
 cat > split-debuginfo.sh <<\EOF
@@ -653,7 +707,7 @@ if [ -f "${BUILDDIR}"/debugfiles.list \
   > "${BUILDDIR}"/debugfiles-base.list
   cd "${RPM_BUILD_ROOT}"
   for f in `find usr/lib/debug -name \*.debug \
-	    | egrep 'lib[0-9]*/lib(gcc|gomp|stdc)'`; do
+	    | egrep 'lib[0-9]*/lib(gcc|gomp|stdc|quadmath|itm)'`; do
     echo "/$f" >> "${BUILDDIR}"/debugfiles-base.list
     if [ -f "$f" -a ! -L "$f" ]; then
       cp -a "$f" "${BUILDDIR}"/test.debug
@@ -664,7 +718,7 @@ if [ -f "${BUILDDIR}"/debugfiles.list \
     fi
   done
   for f in `find usr/lib/debug/.build-id -type l`; do
-    ls -l "$f" | egrep -q -- '->.*lib[0-9]*/lib(gcc|gomp|stdc)' \
+    ls -l "$f" | egrep -q -- '->.*lib[0-9]*/lib(gcc|gomp|stdc|quadmath|itm)' \
       && echo "/$f" >> "${BUILDDIR}"/debugfiles-base.list
   done
   grep -v -f "${BUILDDIR}"/debugfiles-base.list \
@@ -705,7 +759,7 @@ tar xzf %{SOURCE4}
 tar xjf %{SOURCE10}
 %endif
 
-sed -i -e 's/4\.6\.4/4.6.3/' gcc/BASE-VER
+sed -i -e 's/4\.7\.3/4.7.2/' gcc/BASE-VER
 echo 'Red Hat %{version}-%{gcc_release}' > gcc/DEV-PHASE
 
 %if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
@@ -852,10 +906,11 @@ CC="$CC" CFLAGS="$OPT_FLAGS" CXXFLAGS="`echo $OPT_FLAGS | sed 's/ -Wall / /g'`" 
 	../configure --prefix=%{_prefix} --mandir=%{_mandir} --infodir=%{_infodir} \
 	--with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap \
 	--enable-shared --enable-threads=posix --enable-checking=release \
+	--disable-build-with-cxx --disable-build-poststage1-with-cxx \
 	--with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions \
-	--enable-gnu-unique-object --enable-linker-build-id \
+	--enable-gnu-unique-object --enable-linker-build-id --with-linker-hash-style=gnu \
 	--enable-languages=c,c++,objc,obj-c++,java,fortran${enablelada}${enablelgo},lto \
-	--enable-plugin \
+	--enable-plugin --enable-initfini-array \
 %if !%{build_java}
 	--disable-libgcj \
 %else
@@ -870,6 +925,8 @@ CC="$CC" CFLAGS="$OPT_FLAGS" CXXFLAGS="`echo $OPT_FLAGS | sed 's/ -Wall / /g'`" 
 %endif
 %if %{build_cloog}
 	--with-ppl --with-cloog \
+%else
+	--without-ppl --without-cloog \
 %endif
 %ifarch %{arm}
 	--disable-sjlj-exceptions \
@@ -917,8 +974,11 @@ CC="$CC" CFLAGS="$OPT_FLAGS" CXXFLAGS="`echo $OPT_FLAGS | sed 's/ -Wall / /g'`" 
 	--build=%{gcc_target_platform}
 %endif
 
-#GCJFLAGS="$OPT_FLAGS" make %{?_smp_mflags} BOOT_CFLAGS="$OPT_FLAGS" bootstrap
+%ifarch %{arm} sparc sparcv9 sparc64
+GCJFLAGS="$OPT_FLAGS" make %{?_smp_mflags} BOOT_CFLAGS="$OPT_FLAGS" bootstrap
+%else
 GCJFLAGS="$OPT_FLAGS" make %{?_smp_mflags} BOOT_CFLAGS="$OPT_FLAGS" profiledbootstrap
+%endif
 
 # Make generated man pages even if Pod::Man is not new enough
 perl -pi -e 's/head3/head2/' ../contrib/texi2pod.pl
@@ -940,7 +1000,7 @@ cd ../..
 cd ..
 mkdir -p rpm.doc/gfortran rpm.doc/objc
 mkdir -p rpm.doc/boehm-gc rpm.doc/fastjar rpm.doc/libffi rpm.doc/libjava
-mkdir -p rpm.doc/go rpm.doc/libgo rpm.doc/libquadmath
+mkdir -p rpm.doc/go rpm.doc/libgo rpm.doc/libquadmath rpm.doc/libitm
 mkdir -p rpm.doc/changelogs/{gcc/cp,gcc/java,gcc/ada,libstdc++-v3,libobjc,libmudflap,libgomp}
 
 for i in {gcc,gcc/cp,gcc/java,gcc/ada,libstdc++-v3,libobjc,libmudflap,libgomp}/ChangeLog*; do
@@ -972,6 +1032,11 @@ cp -p libjava/LIBGCJ_LICENSE rpm.doc/libjava/
 %if %{build_libquadmath}
 (cd libquadmath; for i in ChangeLog* COPYING.LIB; do
 	cp -p $i ../rpm.doc/libquadmath/$i.libquadmath
+done)
+%endif
+%if %{build_libitm}
+(cd libitm; for i in ChangeLog*; do
+	cp -p $i ../rpm.doc/libitm/$i.libitm
 done)
 %endif
 %if %{build_go}
@@ -1026,8 +1091,8 @@ FULLEPATH=%{buildroot}%{_prefix}/libexec/gcc/%{gcc_target_platform}/%{gcc_versio
 
 # fix some things
 ln -sf gcc %{buildroot}%{_prefix}/bin/cc
-mkdir -p %{buildroot}/lib
-ln -sf ..%{_prefix}/bin/cpp %{buildroot}/lib/cpp
+rm -f %{buildroot}%{_prefix}/lib/cpp
+ln -sf ../bin/cpp %{buildroot}/%{_prefix}/lib/cpp
 ln -sf gfortran %{buildroot}%{_prefix}/bin/f95
 rm -f %{buildroot}%{_infodir}/dir
 gzip -9 %{buildroot}%{_infodir}/*.info*
@@ -1084,7 +1149,7 @@ mkdir -p ../rpm.doc/libstdc++-v3
 cp -r -p ../libstdc++-v3/doc/html ../rpm.doc/libstdc++-v3/html
 cp -r -p $libstdcxx_doc_builddir/html ../rpm.doc/libstdc++-v3/html/api
 mkdir -p %{buildroot}%{_mandir}/man3
-#cp -r -p $libstdcxx_doc_builddir/man/man3/* %{buildroot}%{_mandir}/man3/
+cp -r -p $libstdcxx_doc_builddir/man/man3/* %{buildroot}%{_mandir}/man3/
 find ../rpm.doc/libstdc++-v3 -name \*~ | xargs rm
 %endif
 
@@ -1124,6 +1189,9 @@ sed -i -e 's/lib: /&%%{static:%%eJava programs cannot be linked statically}/' \
 %endif
 
 mv %{buildroot}%{_prefix}/lib/libgfortran.spec $FULLPATH/
+%if %{build_libitm}
+mv %{buildroot}%{_prefix}/lib/libitm.spec $FULLPATH/
+%endif
 
 mkdir -p %{buildroot}/%{_lib}
 mv -f %{buildroot}%{_prefix}/%{_lib}/libgcc_s.so.1 %{buildroot}/%{_lib}/libgcc_s-%{gcc_version}-%{DATE}.so.1
@@ -1201,7 +1269,7 @@ popd
 
 pushd $FULLPATH
 if [ "%{_lib}" = "lib" ]; then
-ln -sf ../../../libobjc.so.3 libobjc.so
+ln -sf ../../../libobjc.so.4 libobjc.so
 ln -sf ../../../libstdc++.so.6.*[0-9] libstdc++.so
 ln -sf ../../../libgfortran.so.3.* libgfortran.so
 ln -sf ../../../libgomp.so.1.* libgomp.so
@@ -1213,13 +1281,16 @@ ln -sf ../../../libgo.so.0.* libgo.so
 %if %{build_libquadmath}
 ln -sf ../../../libquadmath.so.0.* libquadmath.so
 %endif
+%if %{build_libitm}
+ln -sf ../../../libitm.so.1.* libitm.so
+%endif
 %if %{build_java}
-ln -sf ../../../libgcj.so.12.* libgcj.so
-ln -sf ../../../libgcj-tools.so.12.* libgcj-tools.so
-ln -sf ../../../libgij.so.12.* libgij.so
+ln -sf ../../../libgcj.so.13.* libgcj.so
+ln -sf ../../../libgcj-tools.so.13.* libgcj-tools.so
+ln -sf ../../../libgij.so.13.* libgij.so
 %endif
 else
-ln -sf ../../../../%{_lib}/libobjc.so.3 libobjc.so
+ln -sf ../../../../%{_lib}/libobjc.so.4 libobjc.so
 ln -sf ../../../../%{_lib}/libstdc++.so.6.*[0-9] libstdc++.so
 ln -sf ../../../../%{_lib}/libgfortran.so.3.* libgfortran.so
 ln -sf ../../../../%{_lib}/libgomp.so.1.* libgomp.so
@@ -1231,10 +1302,13 @@ ln -sf ../../../../%{_lib}/libgo.so.0.* libgo.so
 %if %{build_libquadmath}
 ln -sf ../../../../%{_lib}/libquadmath.so.0.* libquadmath.so
 %endif
+%if %{build_libitm}
+ln -sf ../../../../%{_lib}/libitm.so.1.* libitm.so
+%endif
 %if %{build_java}
-ln -sf ../../../../%{_lib}/libgcj.so.12.* libgcj.so
-ln -sf ../../../../%{_lib}/libgcj-tools.so.12.* libgcj-tools.so
-ln -sf ../../../../%{_lib}/libgij.so.12.* libgij.so
+ln -sf ../../../../%{_lib}/libgcj.so.13.* libgcj.so
+ln -sf ../../../../%{_lib}/libgcj-tools.so.13.* libgcj-tools.so
+ln -sf ../../../../%{_lib}/libgij.so.13.* libgij.so
 %endif
 fi
 %if %{build_java}
@@ -1248,6 +1322,9 @@ mv -f %{buildroot}%{_prefix}/%{_lib}/libgomp.*a .
 mv -f %{buildroot}%{_prefix}/%{_lib}/libmudflap{,th}.*a $FULLLPATH/
 %if %{build_libquadmath}
 mv -f %{buildroot}%{_prefix}/%{_lib}/libquadmath.*a $FULLLPATH/
+%endif
+%if %{build_libitm}
+mv -f %{buildroot}%{_prefix}/%{_lib}/libitm.*a $FULLLPATH/
 %endif
 %if %{build_go}
 mv -f %{buildroot}%{_prefix}/%{_lib}/libgo.*a $FULLLPATH/
@@ -1266,35 +1343,35 @@ mv -f $FULLPATH/ada{include,lib} $FULLLPATH/
 pushd $FULLLPATH/adalib
 if [ "%{_lib}" = "lib" ]; then
 ln -sf ../../../../../libgnarl-*.so libgnarl.so
-ln -sf ../../../../../libgnarl-*.so libgnarl-4.6.so
+ln -sf ../../../../../libgnarl-*.so libgnarl-4.7.so
 ln -sf ../../../../../libgnat-*.so libgnat.so
-ln -sf ../../../../../libgnat-*.so libgnat-4.6.so
+ln -sf ../../../../../libgnat-*.so libgnat-4.7.so
 else
 ln -sf ../../../../../../%{_lib}/libgnarl-*.so libgnarl.so
-ln -sf ../../../../../../%{_lib}/libgnarl-*.so libgnarl-4.6.so
+ln -sf ../../../../../../%{_lib}/libgnarl-*.so libgnarl-4.7.so
 ln -sf ../../../../../../%{_lib}/libgnat-*.so libgnat.so
-ln -sf ../../../../../../%{_lib}/libgnat-*.so libgnat-4.6.so
+ln -sf ../../../../../../%{_lib}/libgnat-*.so libgnat-4.7.so
 fi
 popd
 else
 pushd $FULLPATH/adalib
 if [ "%{_lib}" = "lib" ]; then
 ln -sf ../../../../libgnarl-*.so libgnarl.so
-ln -sf ../../../../libgnarl-*.so libgnarl-4.6.so
+ln -sf ../../../../libgnarl-*.so libgnarl-4.7.so
 ln -sf ../../../../libgnat-*.so libgnat.so
-ln -sf ../../../../libgnat-*.so libgnat-4.6.so
+ln -sf ../../../../libgnat-*.so libgnat-4.7.so
 else
 ln -sf ../../../../../%{_lib}/libgnarl-*.so libgnarl.so
-ln -sf ../../../../../%{_lib}/libgnarl-*.so libgnarl-4.6.so
+ln -sf ../../../../../%{_lib}/libgnarl-*.so libgnarl-4.7.so
 ln -sf ../../../../../%{_lib}/libgnat-*.so libgnat.so
-ln -sf ../../../../../%{_lib}/libgnat-*.so libgnat-4.6.so
+ln -sf ../../../../../%{_lib}/libgnat-*.so libgnat-4.7.so
 fi
 popd
 fi
 %endif
 
 %ifarch sparcv9 ppc
-ln -sf ../../../../../lib64/libobjc.so.3 64/libobjc.so
+ln -sf ../../../../../lib64/libobjc.so.4 64/libobjc.so
 ln -sf ../`echo ../../../../lib/libstdc++.so.6.*[0-9] | sed s~/lib/~/lib64/~` 64/libstdc++.so
 ln -sf ../`echo ../../../../lib/libgfortran.so.3.* | sed s~/lib/~/lib64/~` 64/libgfortran.so
 ln -sf ../`echo ../../../../lib/libgomp.so.1.* | sed s~/lib/~/lib64/~` 64/libgomp.so
@@ -1313,10 +1390,15 @@ rm -f libquadmath.so
 echo 'INPUT ( %{_prefix}/lib/'`echo ../../../../lib/libquadmath.so.0.* | sed 's,^.*libq,libq,'`' )' > libquadmath.so
 echo 'INPUT ( %{_prefix}/lib64/'`echo ../../../../lib/libquadmath.so.0.* | sed 's,^.*libq,libq,'`' )' > 64/libquadmath.so
 %endif
+%if %{build_libitm}
+rm -f libitm.so
+echo 'INPUT ( %{_prefix}/lib/'`echo ../../../../lib/libitm.so.1.* | sed 's,^.*libi,libi,'`' )' > libitm.so
+echo 'INPUT ( %{_prefix}/lib64/'`echo ../../../../lib/libitm.so.1.* | sed 's,^.*libi,libi,'`' )' > 64/libitm.so
+%endif
 %if %{build_java}
-ln -sf ../`echo ../../../../lib/libgcj.so.12.* | sed s~/lib/~/lib64/~` 64/libgcj.so
-ln -sf ../`echo ../../../../lib/libgcj-tools.so.12.* | sed s~/lib/~/lib64/~` 64/libgcj-tools.so
-ln -sf ../`echo ../../../../lib/libgij.so.12.* | sed s~/lib/~/lib64/~` 64/libgij.so
+ln -sf ../`echo ../../../../lib/libgcj.so.13.* | sed s~/lib/~/lib64/~` 64/libgcj.so
+ln -sf ../`echo ../../../../lib/libgcj-tools.so.13.* | sed s~/lib/~/lib64/~` 64/libgcj-tools.so
+ln -sf ../`echo ../../../../lib/libgij.so.13.* | sed s~/lib/~/lib64/~` 64/libgij.so
 ln -sf lib32/libgcj_bc.so libgcj_bc.so
 ln -sf ../lib64/libgcj_bc.so 64/libgcj_bc.so
 %endif
@@ -1336,6 +1418,10 @@ ln -sf ../lib64/libmudflapth.a 64/libmudflapth.a
 ln -sf lib32/libquadmath.a libquadmath.a
 ln -sf ../lib64/libquadmath.a 64/libquadmath.a
 %endif
+%if %{build_libitm}
+ln -sf lib32/libitm.a libitm.a
+ln -sf ../lib64/libitm.a 64/libitm.a
+%endif
 %if %{build_go}
 ln -sf lib32/libgo.a libgo.a
 ln -sf ../lib64/libgo.a 64/libgo.a
@@ -1351,7 +1437,7 @@ ln -sf ../lib64/adalib 64/adalib
 %endif
 %ifarch %{multilib_64_archs}
 mkdir -p 32
-ln -sf ../../../../libobjc.so.3 32/libobjc.so
+ln -sf ../../../../libobjc.so.4 32/libobjc.so
 ln -sf ../`echo ../../../../lib64/libstdc++.so.6.*[0-9] | sed s~/../lib64/~/~` 32/libstdc++.so
 ln -sf ../`echo ../../../../lib64/libgfortran.so.3.* | sed s~/../lib64/~/~` 32/libgfortran.so
 ln -sf ../`echo ../../../../lib64/libgomp.so.1.* | sed s~/../lib64/~/~` 32/libgomp.so
@@ -1370,10 +1456,15 @@ rm -f libquadmath.so
 echo 'INPUT ( %{_prefix}/lib64/'`echo ../../../../lib64/libquadmath.so.0.* | sed 's,^.*libq,libq,'`' )' > libquadmath.so
 echo 'INPUT ( %{_prefix}/lib/'`echo ../../../../lib64/libquadmath.so.0.* | sed 's,^.*libq,libq,'`' )' > 32/libquadmath.so
 %endif
+%if %{build_libitm}
+rm -f libitm.so
+echo 'INPUT ( %{_prefix}/lib64/'`echo ../../../../lib64/libitm.so.1.* | sed 's,^.*libi,libi,'`' )' > libitm.so
+echo 'INPUT ( %{_prefix}/lib/'`echo ../../../../lib64/libitm.so.1.* | sed 's,^.*libi,libi,'`' )' > 32/libitm.so
+%endif
 %if %{build_java}
-ln -sf ../`echo ../../../../lib64/libgcj.so.12.* | sed s~/../lib64/~/~` 32/libgcj.so
-ln -sf ../`echo ../../../../lib64/libgcj-tools.so.12.* | sed s~/../lib64/~/~` 32/libgcj-tools.so
-ln -sf ../`echo ../../../../lib64/libgij.so.12.* | sed s~/../lib64/~/~` 32/libgij.so
+ln -sf ../`echo ../../../../lib64/libgcj.so.13.* | sed s~/../lib64/~/~` 32/libgcj.so
+ln -sf ../`echo ../../../../lib64/libgcj-tools.so.13.* | sed s~/../lib64/~/~` 32/libgcj-tools.so
+ln -sf ../`echo ../../../../lib64/libgij.so.13.* | sed s~/../lib64/~/~` 32/libgij.so
 %endif
 mv -f %{buildroot}%{_prefix}/lib/libobjc.*a 32/
 mv -f %{buildroot}%{_prefix}/lib/libgomp.*a 32/
@@ -1392,6 +1483,10 @@ ln -sf lib64/libmudflapth.a libmudflapth.a
 %if %{build_libquadmath}
 ln -sf ../lib32/libquadmath.a 32/libquadmath.a
 ln -sf lib64/libquadmath.a libquadmath.a
+%endif
+%if %{build_libitm}
+ln -sf ../lib32/libitm.a 32/libitm.a
+ln -sf lib64/libitm.a libitm.a
 %endif
 %if %{build_go}
 ln -sf ../lib32/libgo.a 32/libgo.a
@@ -1419,6 +1514,9 @@ ln -sf ../../../%{multilib_32_arch}-%{_vendor}-%{_target_os}/%{gcc_version}/libm
 %if %{build_libquadmath}
 ln -sf ../../../%{multilib_32_arch}-%{_vendor}-%{_target_os}/%{gcc_version}/libquadmath.a 32/libquadmath.a
 %endif
+%if %{build_libitm}
+ln -sf ../../../%{multilib_32_arch}-%{_vendor}-%{_target_os}/%{gcc_version}/libitm.a 32/libitm.a
+%endif
 %if %{build_go}
 ln -sf ../../../%{multilib_32_arch}-%{_vendor}-%{_target_os}/%{gcc_version}/libgo.a 32/libgo.a
 ln -sf ../../../%{multilib_32_arch}-%{_vendor}-%{_target_os}/%{gcc_version}/libgobegin.a 32/libgobegin.a
@@ -1437,7 +1535,8 @@ ln -sf ../../../%{multilib_32_arch}-%{_vendor}-%{_target_os}/%{gcc_version}/adal
 strip -g `find . \( -name libgfortran.a -o -name libobjc.a -o -name libgomp.a \
 		    -o -name libmudflap.a -o -name libmudflapth.a \
 		    -o -name libgcc.a -o -name libgcov.a -o -name libquadmath.a \
-		    -o -name libgo.a \) -a -type f`
+		    -o -name libitm.a -o -name libgo.a -o -name libcaf\*.a \) \
+		 -a -type f`
 popd
 chmod 755 %{buildroot}%{_prefix}/%{_lib}/libgfortran.so.3.*
 chmod 755 %{buildroot}%{_prefix}/%{_lib}/libgomp.so.1.*
@@ -1445,10 +1544,13 @@ chmod 755 %{buildroot}%{_prefix}/%{_lib}/libmudflap{,th}.so.0.*
 %if %{build_libquadmath}
 chmod 755 %{buildroot}%{_prefix}/%{_lib}/libquadmath.so.0.*
 %endif
+%if %{build_libitm}
+chmod 755 %{buildroot}%{_prefix}/%{_lib}/libitm.so.1.*
+%endif
 %if %{build_go}
 chmod 755 %{buildroot}%{_prefix}/%{_lib}/libgo.so.0.*
 %endif
-chmod 755 %{buildroot}%{_prefix}/%{_lib}/libobjc.so.3.*
+chmod 755 %{buildroot}%{_prefix}/%{_lib}/libobjc.so.4.*
 
 %if %{build_ada}
 chmod 755 %{buildroot}%{_prefix}/%{_lib}/libgnarl*so*
@@ -1506,6 +1608,9 @@ rm -f %{buildroot}%{_prefix}/bin/%{_target_platform}-gcc-%{version} || :
 rm -f %{buildroot}%{_prefix}/bin/%{_target_platform}-gfortran || :
 rm -f %{buildroot}%{_prefix}/bin/%{_target_platform}-gccgo || :
 rm -f %{buildroot}%{_prefix}/bin/%{_target_platform}-gcj || :
+rm -f %{buildroot}%{_prefix}/bin/%{_target_platform}-gcc-ar || :
+rm -f %{buildroot}%{_prefix}/bin/%{_target_platform}-gcc-nm || :
+rm -f %{buildroot}%{_prefix}/bin/%{_target_platform}-gcc-ranlib || :
 
 %ifarch %{multilib_64_archs}
 # Remove libraries for the other arch on multilib arches
@@ -1539,7 +1644,7 @@ touch %{buildroot}%{_prefix}/%{_lib}/gcj-%{version}/classmap.db
 rm -f %{buildroot}%{mandir}/man3/ffi*
 
 # Help plugins find out nvra.
-echo gcc-%{version}-%{release}.%{arch} > $FULLPATH/rpmver
+echo gcc-%{version}-%{release}.%{_arch} > $FULLPATH/rpmver
 
 %check
 cd obj-%{gcc_target_platform}
@@ -1727,6 +1832,21 @@ fi
 
 %postun -n libquadmath -p /sbin/ldconfig
 
+%post -n libitm
+/sbin/ldconfig
+if [ -f %{_infodir}/libitm.info.gz ]; then
+  /sbin/install-info \
+    --info-dir=%{_infodir} %{_infodir}/libitm.info.gz || :
+fi
+
+%preun -n libitm
+if [ $1 = 0 -a -f %{_infodir}/libitm.info.gz ]; then
+  /sbin/install-info --delete \
+    --info-dir=%{_infodir} %{_infodir}/libitm.info.gz || :
+fi
+
+%postun -n libitm -p /sbin/ldconfig
+
 %post -n libgo -p /sbin/ldconfig
 
 %postun -n libgo -p /sbin/ldconfig
@@ -1738,6 +1858,9 @@ fi
 %{_prefix}/bin/c99
 %{_prefix}/bin/gcc
 %{_prefix}/bin/gcov
+%{_prefix}/bin/gcc-ar
+%{_prefix}/bin/gcc-nm
+%{_prefix}/bin/gcc-ranlib
 %ifarch ppc
 %{_prefix}/bin/%{_target_platform}-gcc
 %endif
@@ -1775,6 +1898,8 @@ fi
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/omp.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/stdint.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/stdint-gcc.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/stdalign.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/stdnoreturn.h
 %ifarch %{ix86} x86_64
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/mmintrin.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/xmmintrin.h
@@ -1792,11 +1917,20 @@ fi
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/fma4intrin.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/xopintrin.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/lwpintrin.h
-%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/abmintrin.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/popcntintrin.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/bmiintrin.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/tbmintrin.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/ia32intrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/avx2intrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/bmi2intrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/f16cintrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/fmaintrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/lzcntintrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/rtmintrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/xtestintrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/adxintrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/prfchwintrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/rdseedintrin.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/mm_malloc.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/mm3dnow.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/cpuid.h
@@ -1815,6 +1949,14 @@ fi
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/spu2vmx.h
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/vec_types.h
 %endif
+%ifarch %{arm}
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/unwind-arm-common.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/mmintrin.h
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/arm_neon.h
+%endif
+%ifarch sparc sparcv9 sparc64
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/visintrin.h
+%endif
 %{_prefix}/libexec/gcc/%{gcc_target_platform}/%{gcc_version}/collect2
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/crt*.o
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libgcc.a
@@ -1824,6 +1966,9 @@ fi
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libgomp.spec
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libgomp.a
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libgomp.so
+%if %{build_libitm}
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libitm.spec
+%endif
 %ifarch sparcv9 ppc
 %dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/crt*.o
@@ -1840,6 +1985,10 @@ fi
 %if %{build_libquadmath}
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/libquadmath.a
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/libquadmath.so
+%endif
+%if %{build_libitm}
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/libitm.a
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/libitm.so
 %endif
 %endif
 %ifarch %{multilib_64_archs}
@@ -1859,6 +2008,10 @@ fi
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32/libquadmath.a
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32/libquadmath.so
 %endif
+%if %{build_libitm}
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32/libitm.a
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32/libitm.so
+%endif
 %endif
 %ifarch sparcv9 sparc64 ppc ppc64
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libmudflap.a
@@ -1869,6 +2022,10 @@ fi
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libquadmath.a
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libquadmath.so
 %endif
+%if %{build_libitm}
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libitm.a
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libitm.so
+%endif
 %endif
 %dir %{_prefix}/libexec/getconf
 %{_prefix}/libexec/getconf/default
@@ -1876,7 +2033,7 @@ fi
 
 %files -n cpp -f cpplib.lang
 %defattr(-,root,root,-)
-/lib/cpp
+%{_prefix}/lib/cpp
 %{_prefix}/bin/cpp
 %{_mandir}/man1/cpp.1*
 %{_infodir}/cpp*
@@ -2014,7 +2171,7 @@ fi
 
 %files -n libobjc
 %defattr(-,root,root,-)
-%{_prefix}/%{_lib}/libobjc.so.3*
+%{_prefix}/%{_lib}/libobjc.so.4*
 
 %files gfortran
 %defattr(-,root,root,-)
@@ -2036,6 +2193,7 @@ fi
 %{_prefix}/libexec/gcc/%{gcc_target_platform}/%{gcc_version}/f951
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libgfortran.spec
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libgfortranbegin.a
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libcaf_single.a
 %ifarch sparcv9 sparc64 ppc ppc64
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libgfortran.a
 %endif
@@ -2043,12 +2201,14 @@ fi
 %ifarch sparcv9 ppc
 %dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/libgfortranbegin.a
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/libcaf_single.a
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/libgfortran.a
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/64/libgfortran.so
 %endif
 %ifarch %{multilib_64_archs}
 %dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32/libgfortranbegin.a
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32/libcaf_single.a
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32/libgfortran.a
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/32/libgfortran.so
 %endif
@@ -2377,6 +2537,43 @@ fi
 %endif
 %endif
 
+%if %{build_libitm}
+%files -n libitm
+%defattr(-,root,root,-)
+%{_prefix}/%{_lib}/libitm.so.1*
+%{_infodir}/libitm.info*
+
+%files -n libitm-devel
+%defattr(-,root,root,-)
+%dir %{_prefix}/lib/gcc
+%dir %{_prefix}/lib/gcc/%{gcc_target_platform}
+%dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}
+%dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include
+#%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/itm.h
+#%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/include/itm_weak.h
+%ifnarch sparcv9 sparc64 ppc ppc64
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libitm.so
+%endif
+%doc rpm.doc/libitm/ChangeLog*
+
+%files -n libitm-static
+%defattr(-,root,root,-)
+%dir %{_prefix}/lib/gcc
+%dir %{_prefix}/lib/gcc/%{gcc_target_platform}
+%dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}
+%ifarch sparcv9 ppc
+%dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/lib32
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/lib32/libitm.a
+%endif
+%ifarch sparc64 ppc64
+%dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/lib64
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/lib64/libitm.a
+%endif
+%ifnarch sparcv9 sparc64 ppc ppc64
+%{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/libitm.a
+%endif
+%endif
+
 %if %{build_go}
 %files go
 %defattr(-,root,root,-)
@@ -2467,528 +2664,452 @@ fi
 %dir %{_prefix}/lib/gcc/%{gcc_target_platform}
 %dir %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}
 %{_prefix}/lib/gcc/%{gcc_target_platform}/%{gcc_version}/plugin
+%dir %{_prefix}/libexec/gcc
+%dir %{_prefix}/libexec/gcc/%{gcc_target_platform}
+%dir %{_prefix}/libexec/gcc/%{gcc_target_platform}/%{gcc_version}
+%{_prefix}/libexec/gcc/%{gcc_target_platform}/%{gcc_version}/plugin
 
 %changelog
-* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 4.6.3-1
-- Update to 4.6.3
-- Rebuilt for el6
+* Fri Nov  9 2012 Jakub Jelinek <jakub@redhat.com> 4.7.2-8
+- update from the 4.7 branch
+  - PRs fortran/54917, libstdc++/28811, libstdc++/54482, libstdc++/55028,
+	libstdc++/55215, middle-end/55219, target/55204,
+	tree-optimization/54986
+- further debug info quality improvements
+- fix reassociation (PR c++/55137)
+- fix range test optimization with -fwrapv (PR tree-optimization/55236)
+- add BuildRequires hostname (#875001)
+- __cxa_vec_new[23] overflow checking (#875009)
 
-* Thu Oct 27 2011 Jakub Jelinek <jakub@redhat.com> 4.6.2-1
-- update from the 4.6 branch
-  - GCC 4.6.2 release
-  - PRs c++/44473, c++/49216, c++/49855, c++/49896, c++/50531, c++/50611,
-	c++/50618, c++/50787, c++/50793, c/50565, debug/50816, fortran/47023,
-	fortran/48706, fortran/50016, fortran/50273, fortran/50570,
-	fortran/50585, fortran/50625, fortran/50659, fortran/50718,
-	libobjc/49883, libobjc/50002, libstdc++/48698, middle-end/49801,
-	middle-end/50326, middle-end/50386, obj-c++/48275, objc-++/48275,
-	target/49049, target/49824, target/49965, target/49967, target/50106,
-	target/50350, target/50652, target/50737, target/50788, target/50820,
-	tree-optimization/49279, tree-optimization/50189,
-	tree-optimization/50700, tree-optimization/50712,
-	tree-optimization/50723
-- add armv7hl configury options (#746843)
-- add `gcc -print-file-name=rpmver` file with gcc NVRA for plugins
-  (#744922)
-- fix build against current glibc, ctype.h changes broke libjava compilation
+* Mon Nov  5 2012 Jakub Jelinek <jakub@redhat.com> 4.7.2-7
+- update from the 4.7 branch
+  - PRs c++/54984, c++/54988, debug/54828, libstdc++/55047, libstdc++/55123,
+	libstdc++/55169, middle-end/54945, rtl-optimization/53701,
+	rtl-optimization/54870, target/53975, target/54892, target/55019,
+	target/55175, tree-optimization/53708, tree-optimization/54146,
+	tree-optimization/54877, tree-optimization/54902,
+	tree-optimization/54920, tree-optimization/54985
+- backported s390{,x} zEC12 enablement (#805114)
+- backport of selected debug info quality improvements
+  - PRs debug/54402, debug/54693, debug/54953, debug/54970, debug/54971
+- optimize away overflow checking for new char[n]; and similar cases
+  where n is multiplied by 1
 
-* Mon Oct  2 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-10
-- update from the 4.6 branch
-  - PRs c++/20039, c++/40831, c++/42844, c++/46105, c++/48320, c++/50424,
-	c++/50442, c++/50491, c++/50508, inline-asm/50571, libstdc++/49559,
-	libstdc++/50509, libstdc++/50510, libstdc++/50529, middle-end/49886,
-	target/50091, target/50341, target/50464, testsuite/50487,
-	tree-optimization/49518, tree-optimization/49628,
-	tree-optimization/49911, tree-optimization/50162,
-	tree-optimization/50412, tree-optimization/50413,
-	tree-optimization/50472
-- recognize IVs with REFERENCE_TYPE in simple_iv similarly to
-  IVs with POINTER_TYPE (#528578)
-- return larger types for odd-sized precision in Fortran type_for_size
-  langhook if possible
+* Mon Oct 15 2012 Jon Ciesla <limburgher@gmail.com> 4.7.2-6
+- Provides: bundled(libiberty)
 
-* Thu Sep  8 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-9
-- update from the 4.6 branch
-  - PRs c++/49267, c++/50089, c++/50157, c++/50207, c++/50220, c++/50224,
-	c++/50234, c++/50255, c++/50309, c/50179, fortran/50163,
-	libffi/49594, libfortran/50192, libstdc++/50268, middle-end/50116,
-	middle-end/50266, target/50090, target/50202, target/50289,
-	target/50310, tree-optimization/50178
-- debug info related backports from the trunk
-  - PRs debug/50191, debug/50215
-- fix call site debug info on big endian targets (PR debug/50299)
-- put libgcc.a into libgcc_s.so linker script also on arm (#733549)
-- use %%{?fedora} instead of %%{fedora}, handle 0%%{?rhel} >= 7 like
-  0%%{?fedora} >= 16
+* Mon Oct 15 2012 Jakub Jelinek <jakub@redhat.com> 4.7.2-5
+- update from the 4.7 branch
+  - PRs fortran/54784, libfortran/54736, libstdc++/54861
 
-* Wed Aug 24 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-8
-- update from the 4.6 branch
-  - PRs c++/46862, c++/48993, c++/49669, c++/49921, c++/49988, c++/50024,
-	c++/50054, c++/50086, fortran/49792, fortran/50050, fortran/50109,
-	fortran/50129, fortran/50130, middle-end/49923, target/50001,
-	target/50092, tree-optimization/48739
-- build EH_SPEC_BLOCK with the same location as current function
-  to help gcov (#732802, PR c++/50055)
-- support used attribute on template class methods and static data
-  members for forced instantiation (#722587)
-- fix up location copying in the vectorizer (PR tree-optimization/50133)
-- unshare CALL_INSN_FUNCTION_USAGE (PR middle-end/48722)
-- fix up gthr*.h for -E -C (#713800)
+* Tue Oct  9 2012 Jakub Jelinek <jakub@redhat.com> 4.7.2-4
+- update from the 4.7 branch
+  - PRs c++/54777, c++/54858, debug/53135, target/54741, target/54785,
+	target/54854
+- backport of selected debug info quality improvements (#851467)
+  - PRs debug/48866, debug/52983, debug/53740, debug/53923, debug/54519,
+	debug/54551
 
-* Thu Aug  4 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-7
-- update from the 4.6 branch
-  - PRs c++/43886, c++/49593, c++/49803, fortran/49885,
-	tree-optimization/49948
-- add self_spec support to specs
-- add COPYING.RUNTIME to gcc and libgcc docs (#727809)
-- SPARC entry_value fixes (PRs target/48220, debug/49815)
-- fix up c-family headers in gcc-plugin-devel (#728011, PRs plugins/45348,
-  plugins/46577, plugins/48425)
+* Mon Oct  1 2012 Jakub Jelinek <jakub@redhat.com> 4.7.2-3
+- update from the 4.7 branch
+  - PRs target/54083, target/54703, target/54746, testsuite/54007
+- backport operator new[] overflow checking (#850911, PR c++/19351)
 
-* Tue Aug  2 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-6
-- update from the 4.6 branch
-  - PRs c++/49260, c++/49924, libstdc++/49925, target/47908, target/49920
-  - fix libquadmath on i686 (#726909)
-- OpenMP 3.1 support (PR fortran/42041, PR fortran/46752)
-%if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
-- make -grecord-gcc-switches the default
-%endif
+* Fri Sep 21 2012 Jakub Jelinek <jakub@redhat.com> 4.7.2-2
+- update from the 4.7 branch
+  - PRs c/54103, c/54552, libstdc++/54102, middle-end/54638, other/43620
 
-* Sun Jul 31 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-5
-- update from the 4.6 branch
-  - PRs debug/49871, fortran/48876, fortran/49791, middle-end/49897,
-	middle-end/49898, rtl-optimization/49799, target/47364
-- don't attempt to size optimize -gdwarf-2 DW_AT_data_member_location
-  from DW_OP_plus_uconst form
+* Thu Sep 20 2012 Jakub Jelinek <jakub@redhat.com> 4.7.2-1
+- update from the 4.7 branch
+  - GCC 4.7.2 release
+  - PRs c++/53661, lto/54312, tree-optimization/54563
 
-* Wed Jul 27 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-4
-- update from the 4.6 branch
-  - PRs ada/49819, c++/49785, debug/47393, fortran/49648, fortran/49708,
-	middle-end/49675, middle-end/49732, target/39386, target/49600,
-	target/49723, target/49746, testsuite/49753, tree-opt/49671,
-	tree-optimization/45819, tree-optimization/49309,
-	tree-optimization/49725, tree-optimization/49768
-- require gmp-devel, mpfr-devel and libmpc-devel in gcc-plugin-devel
-  (#725569)
-- backport -grecord-gcc-switches (#507759, PR other/32998)
-%if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
-- more compact debug macro info for -g3 - .debug_macro section
-- improve call site debug info for some floating point parameters
-  passed on the stack (PR debug/49846)
-%endif
-- fix -mcmodel=large call constraints (PR target/49866, #725516)
+* Thu Sep 13 2012 Jakub Jelinek <jakub@redhat.com> 4.7.1-8
+- update from the 4.7 branch
+  - PRs c++/53836, c++/53839, c++/54086, c++/54197, c++/54253, c++/54341,
+	c++/54506, c++/54511, c/54363, c/54428, c/54559, debug/54534,
+	driver/54335, fortran/53306, fortran/54208, fortran/54225,
+	fortran/54435, fortran/54443, fortran/54556, gcov-profile/54487,
+	libstdc++/54172, libstdc++/54185, libstdc++/54297, libstdc++/54351,
+	libstdc++/54376, libstdc++/54388, lto/53572, middle-end/53667,
+	middle-end/53992, middle-end/54146, middle-end/54486,
+	middle-end/54515, rtl-optimization/54088, rtl-optimization/54369,
+	rtl-optimization/54455, target/45070, target/46254, target/54212,
+	target/54220, target/54252, target/54436, target/54461,
+	target/54476, target/54536, tree-opt/54494,
+	tree-optimization/53922, tree-optimization/54498
+- fix up _mm_f{,n}m{add,sub}_s{s,d} fma intrinsics (PR target/54564)
 
-* Fri Jul 15 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-3
-- update from the 4.6 branch
-  - PRs ada/46350, ada/48711, c++/49672, fortran/48926, fortran/49562,
-	fortran/49690, fortran/49698, target/39633, target/46779,
-	target/49487, target/49541, target/49621, tree-opt/49309,
-	tree-optimization/49094, tree-optimization/49651
-- backport -march=bdver2 and -mtune=bdver2 support
-%if 0%{?fedora} < 16 || 0%{?rhel} >= 7
-- use ENTRY_VALUE RTLs internally to improve generated debug info,
-  just make sure to remove it from possible options before emitting
-  var-tracking notes
-%endif
+* Mon Aug 13 2012 Jakub Jelinek <jakub@redhat.com> 4.7.1-7
+- update from the 4.7 branch
+  - PR rtl-optimization/53942
+- backport -mrdseed, -mprfchw and -madx support
 
-* Fri Jul  8 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-2
-- update from the 4.6 branch
-  - PRs ada/49511, bootstrap/23656, bootstrap/49247, c++/48157, c/48825,
-	c++/49418, c++/49440, c++/49528, c++/49598, c/49644, debug/49262,
-	debug/49522, fortran/49466, fortran/49479, fortran/49623,
-	libffi/46660, libfortran/49296, middle-end/49640, other/47733,
-	regression/47836, rtl-optimization/49014, rtl-optimization/49472,
-	rtl-optimization/49619, target/34734, target/47997, target/48273,
-	target/49089, target/49335, target/49660, testsuite/49643,
-	tree-optimization/38752, tree-optimization/49516,
-	tree-optimization/49539, tree-optimization/49572,
-	tree-optimization/49615, tree-optimization/49618
-  - decrease compiler memory and time requirements on Fortran DATA
-    with many times repeated initializers (#716721, PR fortran/49540)
-- backport some debuginfo improvements and fixes
-  - PRs debug/49364, debug/49602
-  - fix typed DWARF stack ICE (#717240, PR49567)
-- backport __builtin_assume_aligned support (#713586)
-- backport further C++ FE improvements for heavy overloading use
-  (#651098, PR c++/48481)
+* Fri Aug 10 2012 Jakub Jelinek <jakub@redhat.com> 4.7.1-6
+- update from the 4.7 branch
+  - PRs libstdc++/54036, libstdc++/54075, rtl-optimization/54157,
+	target/33135, target/52530
 
-* Mon Jun 27 2011 Jakub Jelinek <jakub@redhat.com> 4.6.1-1
-- update from the 4.6 branch
-  - GCC 4.6.1 release
-  - PRs c++/33840, c++/49117, c++/49134, c++/49229, c++/49251, c++/49264,
-	c++/49276, c++/49290, c++/49298, c++/49369, c++/49482, c++/49507,
-	debug/47590, debug/48459, fortran/47601, fortran/48699,
-	fortran/49074, fortran/49103, fortran/49112, fortran/49268,
-	fortran/49324, fortran/49417, gcov-profile/49299, middle-end/49191,
-	rtl-optimization/48542, rtl-optimization/49235, target/44618,
-	target/48454, target/49186, target/49238, target/49307, target/49411,
-	target/49461, testsuite/49432, tree-optimization/48613,
-	tree-optimization/48702, tree-optimization/49038,
-	tree-optimization/49115, tree-optimization/49243,
-	tree-optimization/49419
-  - fix GCSE (#712480, PR rtl-optimization/49390)
-- use rm -f and mv -f in split-debuginfo.sh (#716664)
-- backport some debuginfo improvements and bugfixes
-%if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
-  - improve debug info for IPA-SRA through DW_OP_GNU_parameter_ref
-    (PR debug/47858)
-  - emit DW_OP_GNU_convert <0> as convert to untyped
-%endif
-  - emit .debug_loc empty ranges for parameters that are
-    modified even before first insn in a function (PR debug/49382)
-  - fix debug ICE on s390x (PR debug/49544)
-  - VTA ICE fix (PR middle-end/49308)
-- balance work in #pragma omp for schedule(static) better (PR libgomp/49490)
+* Fri Jul 20 2012 Jakub Jelinek <jakub@redhat.com> 4.7.1-5
+- update from the 4.7 branch
+  - PRs c++/54026, middle-end/54017, rtl-optimization/52250, target/53877,
+	target/54029
+  - fix endless hang of C++ compiler (#841814, PR c++/54038)
 
-* Fri Jun  3 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-10
-- update from the 4.6 branch
-  - PRs fortran/45786, fortran/49265, middle-end/48953, middle-end/48985,
-	tree-optimization/49093
-- backport some debuginfo improvements
-  - PRs debug/47919, debug/47994, debug/49250
-- decrease C++ FE memory usage on code with heavy overloading
-  (#651098, PR c++/48481)
+* Wed Jul 18 2012 Jakub Jelinek <jakub@redhat.com> 4.7.1-4
+- update from the 4.7 branch
+  - PRs c++/53549, c++/53989, c++/53995, libstdc++/53978
 
-* Mon May 30 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-9
-- update from the 4.6 branch
-  - PRs c++/44311, c++/44994, c++/45080, c++/45401, c++/45418, c++/45698,
-	c++/46005, c++/46245, c++/46696, c++/47049, c++/47184, c++/47277,
-	c++/48284, c++/48292, c++/48424, c++/48935, c++/49156, c++/49165,
-	c++/49176, c++/49223, fortran/48955, libobjc/48177, libstdc++/49141,
-	target/43700, target/43995, target/44643, target/45263,
-	tree-optimization/44897, tree-optimization/49161,
-	tree-optimization/49217, tree-optimization/49218
-%if 0%{?fedora} >= 16 || 0%{?rhel} >= 7
-- default to -gdwarf-4 -fno-debug-types-section instead of -gdwarf-3
-- backport DW_OP_GNU_entry_value support
-  (PRs rtl-optimization/48826, debug/48902, bootstrap/48148,
-   debug/48203, bootstrap/48168, debug/48023, debug/48178,
-   debug/48163, debug/48160, bootstrap/48153, middle-end/48152,
-   bootstrap/48148, debug/45882)
-- backport DW_OP_GNU_{{const,regval,deref}_type,convert,reinterpret}
-  support (PRs debug/48928, debug/48853)
-%endif
-- split off debuginfo for libgcc_s, libstdc++ and libgomp into
-  gcc-base-debuginfo subpackage (#706973)
-- run ldconfig in libgcc %%postun, drop libcc_post_upgrade,
-  instead write the script in <lua> (#705832)
+* Mon Jul 16 2012 Jakub Jelinek <jakub@redhat.com> 4.7.1-3
+- update from the 4.7 branch
+  - C++11 ABI change - std::list and std::pair in C++11 ABI compatible again
+    with C++03, but ABI incompatible with C++11 in GCC 4.7.[01]
+  - PRs bootstrap/52947, c++/53733, c++/53816, c++/53821, c++/53826,
+	c++/53882, c++/53953, fortran/53732, libstdc++/49561,
+	libstdc++/53578, libstdc++/53657, libstdc++/53830, libstdc++/53872,
+	middle-end/38474, middle-end/50708, middle-end/52621,
+	middle-end/52786, middle-end/53433, rtl-optimization/53908,
+	target/53110, target/53811, target/53853, target/53961,
+	testsuite/20771, tree-optimization/53693
+- backport -mrtm and -mhle support (PRs target/53194, target/53201,
+  target/53315)
+- fix up ppc32 *movdi_internal32 pattern (#837630)
+- apply ld.so arm hfp patch on all arm arches
+- enable go support on arm
 
-* Wed May 25 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-8
-- update from the 4.6 branch
-  - PRs bootstrap/49086, c++/47263, c++/47336, c++/47544, c++/48522,
-	c++/48617, c++/48647, c++/48736, c++/48745, c++/48780, c++/48859,
-	c++/48869, c++/48873, c++/48884, c++/48945, c++/48948, c++/49042,
-	c++/49043, c++/49066, c++/49082, c++/49105, c++/49136, c/49120,
-	debug/48159, debug/49032, fortran/48889, libstdc++/49058, lto/48207,
-	lto/48703, lto/49123, middle-end/48973, middle-end/49029,
-	preprocessor/48677, target/48986, target/49002, target/49104,
-	target/49128, target/49133, tree-optimization/48172,
-	tree-optimization/48794, tree-optimization/48822,
-	tree-optimization/48975, tree-optimization/49000,
-	tree-optimization/49018, tree-optimization/49039,
-	tree-optimization/49073, tree-optimization/49079
-  - ppc V2DImode ABI fix (#705764, PR target/48857)
-  - fix ppc var-tracking ICE (#703888, PR debug/48967)
+* Fri Jul 13 2012 Jakub Jelinek <jakub@redhat.com> 4.7.1-2
+- change ld.so pathname for arm hfp for F18+
 
-* Mon May  9 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-7
-- update from the 4.6 branch
-  - PRs ada/48844, c++/40975, c++/48089, c++/48446, c++/48656, c++/48749,
-	c++/48838, c++/48909, c++/48911, fortran/48112, fortran/48279,
-	fortran/48462, fortran/48720, fortran/48746, fortran/48788,
-	fortran/48800, fortran/48810, fortran/48894, libgfortran/48030,
-	libstdc++/48750, libstdc++/48760, lto/48846, middle-end/48597,
-	preprocessor/48192, target/48226, target/48252, target/48262,
-	target/48774, target/48900, tree-optimization/48809
-- fix ICE with references in templates (PR c++/48574)
-- disable tail call optimization if tail recursion needs accumulators
-  (PR PR tree-optimization/48837)
+* Fri Jun 29 2012 Jakub Jelinek <jakub@redhat.com> 4.7.1-1
+- update from the 4.7 branch
+  - GCC 4.7.1 release
+  - PRs ada/53592, c++/51214, c++/52637, c++/52841, c++/52988, c++/53202,
+	c++/53305, c++/53498, c++/53524, c++/53594, c++/53599, c++/53602,
+	c++/53616, c++/53651, c++/53752, debug/53682, fortran/50619,
+	fortran/53597, fortran/53685, fortran/53691, gcov-profile/53744,
+	libgomp/52993, libstdc++/53270, libstdc++/53678, middle-end/53470,
+	middle-end/53580, middle-end/53790, preprocessor/37215,
+	rtl-optimization/53589, rtl-optimization/53700, target/52908,
+	target/53559, target/53595, target/53621, target/53759,
+	tree-optimization/52558
 
-* Thu Apr 28 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-6
-- update from the 4.6 branch
-  - PRs c++/42687, c++/46304, c++/48046, c++/48657, c++/48707, c++/48726,
-	c/48685, c/48716, c/48742, debug/48768, fortran/47976,
-	fortran/48588, libstdc++/48521, lto/48148, lto/48492,
-	middle-end/48695, other/48748, preprocessor/48740, target/48288,
-	target/48708, target/48723, tree-optimization/48611,
-	tree-optimization/48717, tree-optimization/48731,
-	tree-optimization/48734
+* Mon Jun  4 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-7
+- update from the 4.7 branch
+  - PRs ada/53517, c++/52725, c++/52905, c++/52973, c++/53137, c++/53220,
+	c++/53356, c++/53484, c++/53491, c++/53500, c++/53503,
+	fortran/53521, libstdc++/52007, middle-end/47530, middle-end/48124,
+	middle-end/48493, middle-end/52080, middle-end/52097,
+	middle-end/52979, middle-end/53008, middle-end/53471,
+	middle-end/53501, rtl-optimization/52528, rtl-optimization/53519,
+	target/46261, target/52642, target/52667, tree-optimization/53438,
+	tree-optimization/53505, tree-optimization/53516,
+	tree-optimization/53550
 
-* Tue Apr 19 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-5
-- update from the 4.6 branch
-  - PRs c++/48537, c++/48632, fortran/48360, fortran/48456,
-	libfortran/47571, libstdc++/48476, libstdc++/48631,
-	libstdc++/48635, lto/48538, middle-end/46364, middle-end/48661,
-	preprocessor/48248, target/48366, target/48605, target/48614,
-	target/48678, testsuite/48675, tree-optimization/48616
-  - fix calling functor or non-pointer-to-member through
-    overloaded pointer-to-member operator (#695567, PR c++/48594)
+* Fri May 25 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-6
+- update from the 4.7 branch
+  - PRs ada/52362, ada/52494, bootstrap/53183, c++/53209, c++/53301,
+	c/53418, debug/52727, fortran/53310, fortran/53389, libstdc++/52700,
+	middle-end/51071, middle-end/52584, middle-end/53460,
+	rtl-optimization/52804, target/46098, target/53256, target/53272,
+	target/53358, target/53385, target/53416, target/53435, target/53448,
+	tree-optimization/53364, tree-optimization/53366,
+	tree-optimization/53408, tree-optimization/53409,
+	tree-optimization/53410, tree-optimization/53436,
+	tree-optimization/53465
 
-* Wed Apr 13 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-4
-- update from the 4.6 branch
-  - PRs c++/48450, c++/48452, c++/48468, c++/48500, c++/48523, c++/48528,
-	c++/48534, c++/48570, c++/48574, c/48517, libstdc++/48465,
-	libstdc++/48541, libstdc++/48566, target/47829, target/48090,
-	testsuite/48506, tree-optimization/48195, tree-optimization/48377
-  - fix combiner with -g (#695019, PR rtl-optimization/48549)
-  - fix OpenMP atomic __float128 handling on i?86 (#696129,
-    PR middle-end/48591)
+* Mon May  7 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-5
+- update from the 4.7 branch
+  - PRs fortran/53111, fortran/53255, target/48496, target/52999,
+	target/53228, tree-optimization/52633, tree-optimization/52870,
+	tree-optimization/53195, tree-optimization/53239
 
-* Fri Apr  8 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-3
-- update from the 4.6 branch
-  - PRs bootstrap/48431, c++/48280, debug/48343, debug/48466, fortran/48117,
-	fortran/48291, libstdc++/48398, middle-end/48335,
-	rtl-optimization/48143, rtl-optimization/48144, target/16292,
-	target/48142
-  - don't ICE because of empty partitions during LTO (#688767, PR lto/48246)
-- don't emit DW_AT_*_pc for CUs without any code
+* Fri May  4 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-4
+- update from the 4.7 branch
+  - PRs c++/53186, fortran/52864, libstdc++/53193, lto/52605,
+	target/52684, target/53199, tree-optimization/53144
+  - fix up gcc-ar, gcc-nm and gcc-ranlib (#818311, PR plugins/53126)
 
-* Thu Mar 31 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-2
-- update from the 4.6 branch
-  - PRs c++/47504, c++/47570, c++/47999, c++/48166, c++/48212, c++/48265,
-	c++/48281, c++/48289, c++/48296, c++/48313, c++/48319, c++/48369,
-	debug/48041, debug/48253, preprocessor/48248, target/48349
-- add -fno-debug-types-section switch
-- don't emit .debug_abbrev section if it is empty and unused
+* Wed May  2 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-3
+- update from the 4.7 branch
+  - PRs bootstrap/52840, c++/38543, c++/50303, c++/50830, c++/53003,
+	c/51527, c/52880, c/53060, fortran/53148, libstdc++/52689,
+	libstdc++/52839, libstdc++/53027, libstdc++/53067, libstdc++/53115,
+	middle-end/52939, middle-end/52999, middle-end/53084,
+	middle-end/53136, rtl-optimization/53160, target/52932,
+	target/53020, target/53033, target/53065, target/53120,
+	target/53138, testsuite/52641, testsuite/53046,
+	tree-optimization/53085, tree-optimization/53163,
+	tree-optimizations/52891
+- fix ARM SELECT_CC_MODE ICE (#817086, PR target/53187)
+- fix predictive commoning debug info ICE (PR debug/53174)
 
-* Tue Mar 29 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-1
-- update from the 4.6 branch
-  - GCC 4.6.0 release
-  - PRs c/42544, c/48197, debug/48204, middle-end/48031,
-	middle-end/48134, middle-end/48269, other/48179, other/48221,
-	other/48234, rtl-optimization/48156, target/47553,
-	target/48237, testsuite/48251, tree-optimization/48228
-  - improve RTL DSE speed with large number of stores (#684900,
-    PR rtl-optimization/48141)
-- add gnative2ascii binary and man page to libgcj
+* Mon Apr 16 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-2
+- update from the 4.7 branch
+  - PRs c++/52292, c++/52380, c++/52465, c++/52487, c++/52596, c++/52671,
+	c++/52672, c++/52685, c++/52718, c++/52743, c++/52746, c++/52759,
+	c++/52796, c++/52824, c++/52906, c/52682, c/52862, fortran/52452,
+	fortran/52668, fortran/52893, libgfortran/52758, libitm/52854,
+	libstdc++/52433, libstdc++/52476, libstdc++/52540, libstdc++/52591,
+	libstdc++/52699, libstdc++/52799, libstdc++/52822, libstdc++/52924,
+	libstdc++/52942, middle-end/51893, middle-end/52493,
+	middle-end/52547, middle-end/52580, middle-end/52640,
+	middle-end/52691, middle-end/52693, middle-end/52720,
+	middle-end/52750, middle-end/52894, other/52545,
+	rtl-optimization/52543, target/48596, target/48806, target/50310,
+	target/52461, target/52484, target/52488, target/52496, target/52499,
+	target/52505, target/52506, target/52507, target/52508, target/52610,
+	target/52692, target/52698, target/52717, target/52736, target/52737,
+	target/52775, tree-optimization/52406, tree-optimization/52678,
+	tree-optimization/52701, tree-optimization/52754,
+	tree-optimization/52835, tree-optimization/52943,
+	tree-optimization/52969
+- avoid duplicate pointers in C++ debug info due to injected class name
+  (PR debug/45088)
+- libjava locale fixes (#712013)
 
-* Mon Mar 21 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.15
-- update from the 4.6 branch
-  - PRs bootstrap/45381, bootstrap/48135
-- fix s390 ICE during address delegitimization (PR target/48213, #689266)
+* Thu Mar 22 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-1
+- update from the 4.7 branch
+  - GCC 25th Anniversary 4.7.0 release
+  - fix up new auto mangling
 
-* Fri Mar 18 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.14
-- update from the 4.6 branch
-  - PRs bootstrap/48161, c++/48113, c++/48115, c++/48132, debug/47510,
-	debug/48176, libstdc++/48123, middle-end/47405, middle-end/48165,
-	target/46778, target/46788, target/48171
-- update libstdc++ pretty printers from trunk
+* Thu Mar 15 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.20
+- update from the 4.7 branch
+  - PRs fortran/52469, libitm/52526, libstdc++/52456, target/52450
+  - fix __builtin_ir{ound,int}{,f,l} expansion (#803689, PR middle-end/52592)
+  - fix up devirtualization (#802731, PR c++/52582)
+- fix up user defined literal operator"" lookup (PR c++/52521)
+- avoid false positive -Wunused-but-set-* warnings with __builtin_shuffle
+  (PR c/52577)
 
-* Tue Mar 15 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.13
-- update from trunk and the 4.6 branch
-  - PRs bootstrap/48000, bootstrap/48102, c++/44629, c++/45651, c++/46220,
-	c++/46803, c++/47125, c++/47144, c++/47198, c++/47488, c++/47705,
-	c++/47808, c++/47957, c++/47971, c++/48003, c++/48008, c++/48015,
-	c++/48029, c++/48035, c++/48069, c/47786, debug/47881, debug/48043,
-	fortran/47552, fortran/47850, fortran/48054, fortran/48059,
-	libfortran/48066, libgfortran/48047, libstdc++/48038, libstdc++/48114,
-	lto/47497, lto/48073, lto/48086, middle-end/47968, middle-end/47975,
-	middle-end/48044, middle-end/48098, rtl-optimization/47866,
-	rtl-optimization/47899, target/45413, target/47719, target/47862,
-	target/47986, target/48032, target/48053, testsuite/47954,
-	tree-optimization/47127, tree-optimization/47278,
-	tree-optimization/47714, tree-optimization/47967,
-	tree-optimization/48022, tree-optimization/48063,
-	tree-optimization/48067
-  - fix var-tracking ICE on s390x (#682410, PR debug/47991)
+* Thu Mar  8 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.19
+- update from trunk and the 4.7 branch
+  - PRs libstdc++/51785, middle-end/52419, middle-end/52443,
+	middle-end/52463, rtl-optimization/52417, target/49939,
+	target/51417, target/52408, target/52437, target/52481,
+	testsuite/52297, tree-opt/52242, tree-optimization/52424,
+	tree-optimization/52429, tree-optimization/52445
+  - fix up mangling of operator"" (PR c++/52521)
+- decrease size of .debug_ranges by ~ 20% (PR debug/51902)
+- add support for demangling operator""
+- package %{_prefix}/bin/gcc-{ar,nm,ranlib} binaries for LTO
 
-* Fri Mar  4 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.12
+* Wed Feb 29 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.18
 - update from trunk
-  - PRs c++/46159, c++/46282, c++/47200, c++/47774, c++/47851, c++/47950,
-	c++/47974, c/47963, libstdc++/47913, middle-end/47283,
-	rtl-optimization/47925, target/47935, tree-optimization/47890
-- rebuilt against ppl 0.11.2, reenable cloog-ppl Requires
+  - PRs boehm-gc/48299, bootstrap/52397, bootstrap/52414, fortran/52386,
+	libstdc++/52191, lto/52400, middle-end/51752, target/49448,
+	target/51534, target/52148, target/52407, tree-optimization/52395,
+	tree-optimization/52402, tree-optimization/53207
+  - fix bootstrap on ppc*/arm/s390*
 
-* Tue Mar  1 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.11
+* Mon Feb 27 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.17
 - update from trunk
-  - PRs c++/46466, c++/47873, c++/47897, c++/47906, debug/28047,
-	fortran/40850, fortran/47839, fortran/47846, fortran/47872,
-	fortran/47878, fortran/47886, fortran/47894, libfortran/45165,
-	libfortran/47802, libgfortran/47778, libgfortran/47933,
-	libobjc/47922, libstdc++/42622, libstdc++/47921, lto/46911,
-	lto/47924, middle-end/46790, middle-end/47903, target/42240,
-	target/45261, target/46898, testsuite/47801, tree-optimization/45470
-  - fix stack slot padding reusal (#679924, PR middle-end/47893)
-  - fix ICE on DECL_PARM_INDEX in cp_tree_equal (#680603, PR c++/47904)
-- disable IPA-SRA at -O2/-Os (#668489, PR debug/47858)
-- temporarily disable cloog-ppl Requires, so that ppl and cloog-ppl can
-  be bumped
+  - PRs boehm-gc/52179, libffi/52223, libstdc++/52188, middle-end/52355,
+	middle-end/52361, target/49263, target/49461, target/50580,
+	target/52352, target/52375, target/52390, testsuite/52201,
+	tree-optimization/52376
 
-* Wed Feb 22 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.10
+* Fri Feb 24 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.16
 - update from trunk
-  - PRs c++/46868, tree-optimization/47838, tree-optimization/47849
-- don't ship aotcompile.py* and classfile.py* in libstdc++ (#678982)
+  - fix vtable for std::num_get<char, std::istreambuf_iterator<char,
+    std::char_traits<char> > > and vtable for std::num_get<wchar_t,
+    std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> > >
+    ABI breakage
+  - PR bootstrap/52287
 
-* Wed Feb 22 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.9
+* Thu Feb 23 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.15
 - update from trunk
-  - PRs bootstrap/47827, c++/44118, c++/46394, c++/46472, c++/46831,
-	c++/47199, c++/47207, c++/47242, c++/47666, c++/47703, c++/47833,
-	doc/47848, fortran/41359, fortran/44945, fortran/45077,
-	fortran/45743, fortran/46818, fortran/47797, libfortran/47694,
-	libfortran/47830, libgomp/47854, lto/47820, lto/47822,
-	objc++/47711, objc/47784, rtl-optimization/46002,
-	rtl-optimization/47763, target/47822, target/47840,
-	tree-optimization/47835
-  - fix handling of ObjC pointer to struct with flexible array member
-    in interfaces (#678928, PR objc/47832)
-- temporarily BuildRequire urw-fonts until graphviz is fixed (#677114)
+  - PRs c/52290, fortran/52335, go/52349, libstdc++/50349, lto/50616,
+	middle-end/52329, rtl-optimization/50063, target/18145, target/52330,
+	tree-optimization/52019
+- disable go on arm again, still not ready there
 
-* Sun Feb 20 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.8
+* Tue Feb 21 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.14
 - update from trunk
-  - PRs ada/41929, bootstrap/47736, bootstrap/47807, c++/46807,
-	c++/47172, c++/47208, c++/47326, c++/47482, c++/47503,
-	c++/47704, c++/47783, c++/47795, c/47809, debug/47630,
-	debug/47780, driver/45731, driver/47390, driver/47787,
-	fortran/47348, fortran/47349, fortran/47569, fortran/47633,
-	fortran/47642, fortran/47648, fortran/47716, fortran/47728,
-	fortran/47730, fortran/47745, fortran/47750, fortran/47767,
-	fortran/47768, fortran/47775, fortran/47789, libfortran/47757,
-	libgfortran/47667, libgomp/47731, libgomp/47758, libgomp/47804,
-	libjava/47484, libstdc++/47709, libstdc++/47724, libstdc++/47773,
-	libstdc++/47776, lto/47647, lto/47798, middle-end/47581,
-	middle-end/47725, middle-end/47788, pch/14940,
-	rtl-optimization/46178, target/43653, target/45808, target/47696,
-	target/47755, target/47792, tree-optimization/46494,
-	tree-optimization/46620, tree-optimization/47737,
-	tree-optimization/47738, tree-optimization/47743
-  - fix i?86 shift + plus peephole2 (#678530, PR target/47800)
+  - PRs c++/51415, c++/52126, c++/52248, c++/52312, fortran/52295,
+	libstdc++/47058, libstdc++/52189, libstdc++/52241, libstdc++/52300,
+	libstdc++/52309, libstdc++/52317, middle-end/52141, middle-end/52314,
+	rtl-optimization/52208, target/50166, target/51753, target/52137,
+	target/52238, target/52294, testsuite/52229, translation/52232,
+	translation/52234, translation/52245, translation/52246,
+	translation/52262, translation/52273, tree-optimization/52285,
+	tree-optimization/52286, tree-optimization/52298,
+	tree-optimization/52318, tree-optimization/52324
 
-* Sat Feb 12 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.7
+* Thu Feb 16 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.13
 - update from trunk
-  - PRs binutils/12283, c++/47511, debug/42631, debug/47684, driver/47678,
-	fortran/42434, fortran/45290, fortran/45586, fortran/47352,
-	fortran/47463, fortran/47550, fortran/47574, fortran/47583,
-	fortran/47592, fortran/47637, libffi/46661, libfortran/47571,
-	libgfortran/47567, libstdc++/43863, libstdc++/47433,
-	libstdc++/47628, libstdc++/47668, lto/47225, lto/47241,
-	middle-end/45505, middle-end/47610, middle-end/47639,
-	middle-end/47646, target/42333, target/44606, target/45701,
-	target/46481, target/46610, target/46997, target/47032,
-	target/47324, target/47534, target/47548, target/47558,
-	target/47629, target/47636, target/47665, target/47683,
-	testsuite/47400, testsuite/47622, tree-optimization/42893,
-	tree-optimization/46834, tree-optimization/46994,
-	tree-optimization/46995, tree-optimization/47420,
-	tree-optimization/47615, tree-optimization/47621,
-	tree-optimization/47632, tree-optimization/47641,
-	tree-optimization/47664, tree-optimization/47707
-  - fix postreload on auto inc/decrement instructions (#675787,
-    PR rtl-optimization/47614)
-  - fix a hang in VRP (#676473, PR tree-optimization/47677)
-  - fix STL headers with -fno-operator-names (#676910, PR libstdc++/47662)
-- fix scheduling of debug insns (#675711, PR debug/47620)
+  - PRs boehm-gc/48514, bootstrap/52172, c++/39055, c++/51910, c++/52215,
+	c/52181, c/52190, debug/52165, debug/52260, driver/48524,
+	fortran/32380, fortran/52151, go/48411, go/51874, libffi/52221,
+	libitm/52042, libitm/52220, libstdc++/51368, lto/52178,
+	middle-end/48600, middle-end/51867, middle-end/51929,
+	middle-end/52140, middle-end/52142, middle-end/52177,
+	middle-end/52209, middle-end/52214, middle-end/52230,
+	rtl-optimization/52175, target/51921, target/52146, target/52199,
+	target/52205, target/52261, testsuite/50076, translation/52193,
+	translation/52211, translation/52264, tree-optimization/50031,
+	tree-optimization/50561, tree-optimization/52210,
+	tree-optimization/52244, tree-optimization/52255
+  - fix asm goto handling in templates (#790221, PR c++/52247)
+- reenable go on ppc/ppc64/s390/s390x/arm
 
-* Sat Feb  5 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.6
+* Wed Feb  8 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.12
 - update from trunk
-  - PRs bootstrap/47044, bootstrap/47147, c++/29571, c++/46890, c++/47311,
-	c++/47398, c++/47416, c++/47589, debug/43092, debug/47498,
-	debug/47501, driver/47547, fortran/35810, fortran/45170,
-	fortran/47042, fortran/47082, fortran/47350, fortran/47455,
-	fortran/47463, fortran/47507, fortran/47519, fortran/47523,
-	fortran/47531, fortran/47565, fortran/47572, gcc/46692,
-	inline-asm/23200, java/21206, libfortran/47571, libgcj/44341,
-	libgfortran/47434, libquadmath/47293, libstdc++/46914,
-	libstdc++/47560, lto/47274, middle-end/47543,
-	rtl-optimization/43494, rtl-optimization/44031,
-	rtl-optimization/47525, target/42894, target/45325,
-	target/47272, target/47312, target/47564, target/47580,
-	tree-optimization/40979, tree-optimization/43695,
-	tree-optimization/45122, tree-optimization/46194,
-	tree-optimization/47538, tree-optimization/47541,
-	tree-optimization/47555, tree-optimization/47559,
-	tree-optimization/47561, tree-optimization/47566,
-	tree-optimization/47576
-- suppress -Woverlength-string warnings inside of __asm__
-- fix section flags conflict handling for relro sections (#674890,
-  PR middle-end/47610)
+  - PRs c++/52035, fortran/51514, gcov-profile/52150, libstdc++/51296,
+	libstdc++/51906, middle-end/24306, middle-end/51994,
+	middle-end/52074, rtl-optimization/52139, rtl-optimization/52170,
+	target/40068, target/52152, target/52154, target/52155,
+	tree-optimization/46886
+  - fix up build on ppc*
+  - don't look for lto plugin/lto-wrapper if -E/-S/-c or in cpp
+- move liblto_plugin.so* back into gcc subpackage
 
-* Fri Jan 28 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.5
+* Mon Feb  6 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.11
 - update from trunk
-  - PRs bootstrap/47467, c++/43601, c++/47476, c/21659, c/43082, c/47473,
-	debug/45130, debug/45136, debug/45454, fortran/38536, fortran/47399,
-	fortran/47421, fortran/47448, fortran/47472, fortran/47474,
-	libfortran/47375, libfortran/47431, libfortran/47432,
-	libfortran/47491, libgfortran/47285, libstdc++/47387,
-	libstdc++/47433, libstdc++/47437, lto/44334, lto/47333,
-	lto/47423, middle-end/46949, middle-end/47401, middle-end/47411,
-	middle-end/47414, rtl-optimization/37273, rtl-optimization/44174,
-	rtl-optimization/44469, rtl-optimization/46856,
-	rtl-optimization/46878, rtl-optimization/47166,
-	rtl-optimization/47464, target/40125, target/45701,
-	target/46519, target/46997, target/47237, target/47246,
-	target/47385, target/47408, testsuite/45988,
-	tree-optimization/26854, tree-optimization/29832,
-	tree-optimization/43567, tree-optimization/43657,
-	tree-optimization/43884, tree-optimization/46168,
-	tree-optimization/46215, tree-optimization/46970,
-	tree-optimization/47190, tree-optimization/47228,
-	tree-optimization/47234, tree-optimization/47265,
-	tree-optimization/47271, tree-optimization/47382,
-	tree-optimization/47427, tree-optimization/47428,
-	tree-optimization/47443
-  - really fix the PCH issue on powerpc64 (PR pch/47430)
-  - handle truth_xor_expr in potential_constant_expression_1
-    (#672156, PR tree-optimization/47426)
-- fix named section conflict handling (PR middle-end/31490)
-- suppress -Woverlength-string warnings in __extension__ guarded
-  code
+  - PRs bootstrap/52039, bootstrap/52041, bootstrap/52058, c++/48680,
+	c++/51327, c++/51370, c++/51852, c++/52043, c++/52088, c/52118,
+	debug/52001, debug/52027, debug/52048, fortran/32373, fortran/41587,
+	fortran/41600, fortran/46356, fortran/48705, fortran/48847,
+	fortran/51754, fortran/51808, fortran/51870, fortran/51943,
+	fortran/51946, fortran/51953, fortran/51958, fortran/51970,
+	fortran/51972, fortran/51977, fortran/52012, fortran/52013,
+	fortran/52016, fortran/52022, fortran/52024, fortran/52029,
+	fortran/52038, fortran/52093, fortran/52102, go/47656, go/48501,
+	libitm/51822, libjava/48512, libstdc++/49445, libstdc++/51649,
+	libstdc++/51795, libstdc++/51798, libstdc++/51811, libstdc++/51956,
+	libstdc++/52068, libstdc++/52104, libstdc++/52119, libstdc++/52128,
+	middle-end/43967, middle-end/47982, middle-end/48071,
+	middle-end/51389, middle-end/51959, middle-end/51998,
+	middle-end/52047, rtl-optimization/49800, rtl-optimization/51374,
+	rtl-optimization/51978, rtl-optimization/52092,
+	rtl-optimization/52095, rtl-optimization/52113, target/51500,
+	target/51835, target/51871, target/51920, target/51974, target/52079,
+	target/52107, target/52125, target/52129, testsuite/51875,
+	testsuite/52011, tree-optimization/48794, tree-optimization/50444,
+	tree-optimization/50955, tree-optimization/50969,
+	tree-optimization/51528, tree-optimization/51990,
+	tree-optimization/52020, tree-optimization/52028,
+	tree-optimization/52045, tree-optimization/52046,
+	tree-optimization/52073, tree-optimization/52091,
+	tree-optimization/52115
+  - fix i?86 mem += reg; mem cmp 0 8-bit peephole2 (#786570, PR target/52086)
+  - fix fortran ICE on elemental call (#785433, PR fortran/52059)
+- fix up /lib/cpp symlink for UsrMove (#787460)
+- move LTO plugin into cpp subpackage (#787345)
+- fix debug ICE with i387 reg-stack (#787518, PR debug/52132)
+- fix ARM combine bug (PR rtl-optimization/52060)
+- fix a DWARF4 .debug_types DIE cloning bug (PR debug/51950)
 
-* Mon Jan 24 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.4
-- build gcc-go and libgo* only on architectures that support it
-- workaround PCH issue on powerpc64
+* Thu Jan 26 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.10
+- update from trunk
+  - PRs bootstrap/51985, c++/51223, c++/51812, c++/51917, c++/51928,
+	c++/51930, c++/51973, c++/51992, driver/47249, fortran/51966,
+	fortran/51995, libstdc++/49829, lto/51698, middle-end/45678,
+	middle-end/51986, rtl-optimization/48308, rtl-optimization/48374
+  - fix data-ref handling of non-volatile inline asms (#784242,
+    PR tree-optimization/51987)
+- fix ARM ICE with invalid peephole (#784748, PR target/52006)
 
-* Sat Jan 22 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.3
-- add gcc-go, libgo{,-devel,-static}, libquadmath{,-devel,-static},
-  libgfortran-static and gcc-plugin-devel subpackages
-- fix up libstdc++-doc man page location (#664475)
+* Mon Jan 23 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.9
+- update from trunk
+  - PRs ada/46192, c++/51344, c++/51398, c++/51402, c++/51832, c++/51919,
+	c++/51922, debug/45682, fortran/50556, fortran/51056, fortran/51904,
+	fortran/51913, fortran/51948, libgcj/23182, libgfortran/51899,
+	libitm/51830, libstdc++/50982, lto/51916, middle-end/45416,
+	rtl-optimization/40761, rtl-optimization/51924, target/47096,
+	target/49868, target/50313, target/50887, target/51106, target/51819,
+	target/51900, target/51915, target/51931, target/51934,
+	testsuite/51941, tree-optimization/51895, tree-optimization/51903,
+	tree-optimization/51914, tree-optimization/51949
+  - fix REE pass (#783481, PR rtl-optimization/51933)
+  - further overload fixes with using decls (#783586, PR c++/51925)
+- fix ICE during expansion with BLKmode MEM_REF (#782868, PR middle-end/51895)
+- fix ppc64 profiledbootstrap (PR target/51957)
+- revert broken stack layout change (PR tree-optimization/46590)
+- fix ARM ICE on neon insn splitting (PR target/51968)
 
-* Sat Jan 22 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.2
-- update from the trunk
-  - PRs bootstrap/47055, bootstrap/47187, bootstrap/47215, c++/33558,
-	c++/45520, c++/46552, c++/46658, c++/46688, c++/46903, c++/46977,
-	c++/47022, c++/47041, c++/47067, c++/47213, c++/47218, c++/47289,
-	c++/47291, c++/47303, c++/47388, c/47150, debug/46240, debug/46583,
-	debug/46704, debug/46724, debug/46955, debug/47079, debug/47106,
-	debug/47209, debug/47283, debug/47402, debug/PR46973, driver/42445,
-	driver/47244, fortran/33117, fortran/38536, fortran/41580,
-	fortran/45777, fortran/45848, fortran/46017, fortran/46313,
-	fortran/46402, fortran/46405, fortran/46416, fortran/46478,
-	fortran/46625, fortran/46817, fortran/46896, fortran/47024,
-	fortran/47051, fortran/47174, fortran/47177, fortran/47180,
-	fortran/47182, fortran/47189, fortran/47194, fortran/47195,
-	fortran/47204, fortran/47224, fortran/47240, fortran/47260,
-	fortran/47268, fortran/47295, fortran/47327, fortran/47331,
-	fortran/47377, fortran/47394, gcc/46902, libfortran/46267,
-	libfortran/47296, libfortran/47322, libgfortran/47154,
-	libgfortran/47296, libstdc++/36104, libstdc++/47045, libstdc++/47145,
-	libstdc++/47185, libstdc++/47320, libstdc++/47321, libstdc++/47323,
-	libstdc++/47354, lto/45375, lto/45721, lto/46083, lto/46760,
-	lto/47162, lto/47188, lto/47222, lto/47225, lto/47259, lto/47264,
-	middle-end/32511, middle-end/45235, middle-end/45566,
-	middle-end/46823, middle-end/46894, middle-end/47281,
-	middle-end/47370, middle-end/47395, objc/45989, objc/47078,
-	objc/47232, objc/47314, other/45915, other/46946, preprocessor/39213,
-	rtl-optimization/39077, rtl-optimization/41619,
-	rtl-optimization/45352, rtl-optimization/47216,
-	rtl-optimization/47299, rtl-optimization/47337,
-	rtl-optimization/47366, target/19162, target/38118, target/43309,
-	target/45258, target/46037, target/46655, target/46997, target/47201,
-	target/47219, target/47251, target/47318, testsuite/33033,
-	testsuite/41146, testsuite/45342, testsuite/46230, testsuite/46912,
-	testsuite/47325, testsuite/47371, tree-optimization/45934,
-	tree-optimization/45967, tree-optimization/46021,
-	tree-optimization/46076, tree-optimization/46130,
-	tree-optimization/46302, tree-optimization/46367,
-	tree-optimization/47005, tree-optimization/47053,
-	tree-optimization/47056, tree-optimization/47086,
-	tree-optimization/47139, tree-optimization/47141,
-	tree-optimization/47167, tree-optimization/47179,
-	tree-optimization/47233, tree-optimization/47234,
-	tree-optimization/47239, tree-optimization/47276,
-	tree-optimization/47280, tree-optimization/47286,
-	tree-optimization/47290, tree-optimization/47313,
-	tree-optimization/47355, tree-optimization/47365,
-	tree-optimization/47391, tree-optmization/46469
-- add systemtap probe to _Unwind_DebugHook
+* Thu Jan 19 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.8
+- update from trunk
+  - PRs bootstrap/50237, c++/51225, c++/51889, fortran/48426, fortran/51634,
+	go/50656, libmudflap/40778, libstdc++/51845, libstdc++/51866,
+	lto/51280, middle-end/51192, rtl-optimization/48496,
+	rtl-optimization/51505, tree-optimization/37997,
+	tree-optimization/46590
+- fix a reload bug on s390 (#773565, PR rtl-optimization/51856)
 
-* Wed Jan  5 2011 Jakub Jelinek <jakub@redhat.com> 4.6.0-0.1
+* Tue Jan 17 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.7
+- update from trunk
+  - PRs bootstrap/51860, c++/14179, c++/20681, c++/50012, c++/51403,
+	c++/51620, c++/51633, c++/51714, c++/51777, c++/51813, c++/51827,
+	c++/51854, c++/51868, c/12245, fortran/36755, fortran/48351,
+	fortran/51800, fortran/51809, fortran/51816, fortran/51842,
+	fortran/51869, libitm/51173, libitm/51855, middle-end/51782,
+	middle-end/8081, other/51165, rtl-optimization/51821, target/47852,
+	target/50925, target/51756, tree-optimization/51865
+  - fix up ppc64 bootstrap with -mminimal-toc (#773040, PR bootstrap/51872)
+  - fix up -ftree-tail-merge (#782231, PR tree-optimization/51877)
+- package up arm and sparc specific headers (#781765)
+- enable libitm and disable go on ppc/ppc64
+- fix up big-endian libstdc++ miscompilation (PR middle-end/50325)
+- fix up arm neon vectorization ICEs (PR target/51876)
+
+* Thu Jan 12 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.6
+- update from trunk
+  - PRs ada/41929, bootstrap/51705, bootstrap/51796, c++/47450,
+	c++/48051, c++/50855, c++/51322, c++/51433, c++/51565,
+	c++/51613, c++/51614, c++/51818, c++/6057, debug/51471,
+	fortran/51057, fortran/51578, fortran/51616, fortran/51652,
+	fortran/51758, fortran/51791, fortran/51792, gcov-profile/50127,
+	gcov-profile/51715, gcov-profile/51717, libstdc++/51673,
+	middle-end/51516, middle-end/51806, preprocessor/33919,
+	preprocessor/51776, rtl-optimization/51271, target/47333,
+	rarget/49868, testsuite/51655, tree-optimization/49642,
+	tree-optimization/50913, tree-optimization/51600,
+	tree-optimization/51680, tree-optimization/51694,
+	tree-optimization/51759, tree-optimization/51775,
+	tree-optimization/51799, tree-optimization/51801
+
+* Fri Jan  6 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.5
+- update from trunk
+  - PRs c++/51541, fortran/48946, libstdc++/51504, lto/51774,
+	rtl-optimization/51771, target/51681, tree-optimization/51315
+- disable go on s390{,x}
+- disable profiledbootstrap on arm and sparc* for now
+
+* Thu Jan  5 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.4
+- update from trunk
+  - PRs bootstrap/51072, bootstrap/51648, debug/51746, debug/51762,
+	lto/41576, lto/50490, middle-end/44777, middle-end/49710,
+	middle-end/51472, middle-end/51761, middle-end/51764,
+	middle-end/51768, other/51171, rtl-optimization/51767,
+	tree-optimization/51624, tree-optimization/51760
+- disable go on arm (#771482)
+- enable profiledbootstrap
+
+* Wed Jan  4 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.3
+- update from trunk
+  - PRs bootstrap/51006, bootstrap/51734, c++/29273, c++/51064, c++/51738,
+	debug/51695, fortran/49693, fortran/50981, middle-end/51696,
+	middle-end/51750, other/51163, other/51164, tree-optimization/49651
+- fix up libitm.so.1
+
+* Tue Jan  3 2012 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.2
+- update from trunk
+  - PRs bootstrap/51686, bootstrap/51725, c++/15867, c++/16603, c++/20140,
+	c++/23211, c++/51316, c++/51379, c++/51397, c++/51462, c++/51507,
+	c++/51547, c++/51666, c++/51669, c++/51675, c++/51723, debug/51650,
+	driver/48306, fortran/46262, fortran/46328, fortran/51052,
+	fortran/51502, fortran/51529, fortran/51682, libfortran/51646,
+	libgcj/49193, libstdc++/48362, libstdc++/49204, libstdc++/51608,
+	libstdc++/51701, libstdc++/51711, lto/51650, middle-end/48641,
+	middle-end/51200, middle-end/51212, middle-end/51252,
+	middle-end/51730, other/51679, pch/51722, rtl-optimization/50396,
+	rtl-optimization/51069, rtl-optimization/51667, target/27468,
+	target/47643, target/51345, target/51552, target/51623, target/51643,
+	target/51729, testsuite/50722, testsuite/51645, testsuite/51702,
+	tree-optimization/43491, tree-optimization/51070,
+	tree-optimization/51269, tree-optimization/51683,
+	tree-optimization/51684, tree-optimization/51692,
+	tree-optimization/51704, tree-optimization/51719
+
+* Wed Dec 21 2011 Jakub Jelinek <jakub@redhat.com> 4.7.0-0.1
 - new package

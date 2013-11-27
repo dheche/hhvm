@@ -12,9 +12,9 @@ gcc/
 
 --- gcc/doc/install.texi	(revision 169207)
 +++ gcc/doc/install.texi	(revision 169206)
-@@ -332,7 +332,7 @@ and @option{--with-mpc-include}.  Altern
- distribution is found in a subdirectory of your GCC sources named
- @file{mpc}, it will be built together with GCC@.
+@@ -362,7 +362,7 @@ installed but it is not in your default 
+ @option{--with-mpc} configure option should be used.  See also
+ @option{--with-mpc-lib} and @option{--with-mpc-include}.
  
 -@item Parma Polyhedra Library (PPL) version 0.11
 +@item Parma Polyhedra Library (PPL) version 0.10

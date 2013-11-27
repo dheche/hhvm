@@ -9,7 +9,7 @@
 
 --- gcc/cp/decl.c.jj	2007-10-01 22:11:09.000000000 +0200
 +++ gcc/cp/decl.c	2007-10-02 11:39:46.000000000 +0200
-@@ -2001,23 +2001,21 @@ duplicate_decls (tree newdecl, tree oldd
+@@ -2137,39 +2137,37 @@ duplicate_decls (tree newdecl, tree oldd
  	  DECL_ARGUMENTS (olddecl) = DECL_ARGUMENTS (newdecl);
  	  DECL_RESULT (olddecl) = DECL_RESULT (newdecl);
  	}
@@ -21,6 +21,22 @@
 +	  /* If we're keeping the built-in definition, keep the rtl,
 +	     regardless of declaration matches.  */
 +	  COPY_DECL_RTL (olddecl, newdecl);
++	  if (DECL_BUILT_IN_CLASS (newdecl) == BUILT_IN_NORMAL)
++	    {
++	      enum built_in_function fncode = DECL_FUNCTION_CODE (newdecl);
++	      switch (fncode)
++		{
++		  /* If a compatible prototype of these builtin functions
++		     is seen, assume the runtime implements it with the
++		     expected semantics.  */
++		case BUILT_IN_STPCPY:
++		  if (builtin_decl_explicit_p (fncode))
++		    set_builtin_decl_implicit_p (fncode, true);
++		  break;
++		default:
++		  break;
++		}
++	    }
 +	}
        if (new_defines_function)
  	/* If defining a function declared with other language
@@ -37,6 +53,22 @@
 -	      /* If we're keeping the built-in definition, keep the rtl,
 -		 regardless of declaration matches.  */
 -	      COPY_DECL_RTL (olddecl, newdecl);
+-	      if (DECL_BUILT_IN_CLASS (newdecl) == BUILT_IN_NORMAL)
+-		{
+-		  enum built_in_function fncode = DECL_FUNCTION_CODE (newdecl);
+-		  switch (fncode)
+-		    {
+-		      /* If a compatible prototype of these builtin functions
+-			 is seen, assume the runtime implements it with the
+-			 expected semantics.  */
+-		    case BUILT_IN_STPCPY:
+-		      if (builtin_decl_explicit_p (fncode))
+-			set_builtin_decl_implicit_p (fncode, true);
+-		      break;
+-		    default:
+-		      break;
+-		    }
+-		}
 -	    }
 -
  	  DECL_RESULT (newdecl) = DECL_RESULT (olddecl);

@@ -15,7 +15,7 @@
 
 --- gcc/Makefile.in.jj	2011-01-03 13:44:14.163900902 +0100
 +++ gcc/Makefile.in	2011-01-04 17:48:53.588775911 +0100
-@@ -984,6 +984,8 @@ GCC_PLUGIN_H = gcc-plugin.h highlev-plug
+@@ -962,6 +962,8 @@ GCC_PLUGIN_H = gcc-plugin.h highlev-plug
  PLUGIN_H = plugin.h $(GCC_PLUGIN_H)
  PLUGIN_VERSION_H = plugin-version.h configargs.h
  LIBFUNCS_H = libfuncs.h $(HASHTAB_H)
@@ -24,16 +24,16 @@
  
  #
  # Now figure out from those variables how to compile and link.
-@@ -1037,7 +1039,7 @@ BUILD_LIBDEPS= $(BUILD_LIBIBERTY)
+@@ -1016,7 +1018,7 @@ BUILD_LIBDEPS= $(BUILD_LIBIBERTY)
  # and the system's installed libraries.
- LIBS = @LIBS@ $(CPPLIB) $(LIBINTL) $(LIBICONV) $(LIBIBERTY) $(LIBDECNUMBER) \
- 	$(HOST_LIBS)
+ LIBS = @LIBS@ libcommon.a $(CPPLIB) $(LIBINTL) $(LIBICONV) $(LIBIBERTY) \
+ 	$(LIBDECNUMBER) $(HOST_LIBS)
 -BACKENDLIBS = $(CLOOGLIBS) $(PPLLIBS) $(GMPLIBS) $(PLUGINLIBS) $(HOST_LIBS) \
 +BACKENDLIBS = $(GMPLIBS) $(if $(CLOOGLIBS),-ldl) $(PLUGINLIBS) $(HOST_LIBS) \
  	$(ZLIB)
  # Any system libraries needed just for GNAT.
  SYSLIBS = @GNAT_LIBEXC@
-@@ -2668,40 +2670,40 @@ sese.o : sese.c sese.h $(CONFIG_H) $(SYS
+@@ -2602,40 +2604,40 @@ sese.o : sese.c sese.h $(CONFIG_H) $(SYS
     $(TREE_FLOW_H) $(CFGLOOP_H) $(TREE_DATA_REF_H) tree-pass.h value-prof.h
  graphite.o : graphite.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(DIAGNOSTIC_CORE_H) \
     $(TREE_FLOW_H) $(TREE_DUMP_H) $(CFGLOOP_H) $(TREE_DATA_REF_H) sese.h \
@@ -88,21 +88,25 @@
     graphite-sese-to-poly.h
  tree-vect-loop.o: tree-vect-loop.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
     $(TM_H) $(GGC_H) $(TREE_H) $(BASIC_BLOCK_H) $(DIAGNOSTIC_H) $(TREE_FLOW_H) \
-@@ -3482,6 +3484,11 @@ $(out_object_file): $(out_file) $(CONFIG
+@@ -3454,6 +3456,15 @@ $(common_out_object_file): $(common_out_
  	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) \
- 		$(out_file) $(OUTPUT_OPTION)
+ 	  $< $(OUTPUT_OPTION)
  
 +graphite%.o : \
 +  ALL_CFLAGS := -O $(filter-out -fkeep-inline-functions, $(ALL_CFLAGS))
 +graphite.o : \
 +  ALL_CFLAGS := -O $(filter-out -fkeep-inline-functions, $(ALL_CFLAGS))
++graphite%.o : \
++  ALL_CXXFLAGS := -O $(filter-out -fkeep-inline-functions, $(ALL_CXXFLAGS))
++graphite.o : \
++  ALL_CXXFLAGS := -O $(filter-out -fkeep-inline-functions, $(ALL_CXXFLAGS))
 +
  # Build auxiliary files that support ecoff format.
- mips-tfile: mips-tfile.o version.o $(LIBDEPS)
+ mips-tfile: mips-tfile.o $(LIBDEPS)
  	$(LINKER) $(LINKERFLAGS) $(LDFLAGS) -o $@ \
 --- gcc/graphite-cloog-compat.h.jj	2011-01-03 12:53:05.000000000 +0100
 +++ gcc/graphite-cloog-compat.h	2011-01-04 17:34:09.857757544 +0100
-@@ -272,4 +272,277 @@ static inline int cloog_matrix_nrows (Cl
+@@ -272,4 +272,279 @@ static inline int cloog_matrix_nrows (Cl
     return m->NbRows;
  }
  #endif /* CLOOG_ORG  */
@@ -220,6 +224,7 @@
 +  DYNSYM (stmt_guard); \
 +  DYNSYM (stmt_root); \
 +  DYNSYM (stmt_user); \
++  DYNSYM (stmt_ass); \
 +  DYNSYM (ppl_delete_Constraint_System); \
 +  DYNSYM (ppl_initialize); \
 +  DYNSYM (ppl_new_Constraint_System_from_Constraint); \
@@ -227,7 +232,7 @@
 +  DYNSYM (ppl_Polyhedron_affine_image); \
 +  DYNSYM (ppl_io_fprint_Pointset_Powerset_C_Polyhedron); \
 +  DYNSYMS_PPL11
-+extern struct
++extern struct cloog_pointers_s__
 +{
 +  bool inited;
 +  void *h;
@@ -364,6 +369,7 @@
 +#define stmt_guard (*cloog_pointers__.p_stmt_guard)
 +#define stmt_root (*cloog_pointers__.p_stmt_root)
 +#define stmt_user (*cloog_pointers__.p_stmt_user)
++#define stmt_ass (*cloog_pointers__.p_stmt_ass)
 +#define ppl_delete_Constraint_System (*cloog_pointers__.p_ppl_delete_Constraint_System)
 +#define ppl_initialize (*cloog_pointers__.p_ppl_initialize)
 +#define ppl_new_Constraint_System_from_Constraint (*cloog_pointers__.p_ppl_new_Constraint_System_from_Constraint)
@@ -433,19 +439,26 @@
    initialize_original_copy_tables ();
 --- gcc/graphite-clast-to-gimple.c.jj	2011-01-03 12:53:05.000000000 +0100
 +++ gcc/graphite-clast-to-gimple.c	2011-01-04 16:29:55.738007463 +0100
-@@ -738,10 +738,10 @@ clast_get_body_of_loop (struct clast_stm
+@@ -836,7 +836,7 @@ clast_get_body_of_loop (struct clast_stm
     from STMT_FOR.  */
  
  static tree
--gcc_type_for_iv_of_clast_loop (struct clast_for *stmt_for, int level,
-+gcc_type_for_iv_of_clast_loop (struct clast_for *stmt_fora, int level,
- 			       tree lb_type, tree ub_type)
+-type_for_clast_for (struct clast_for *stmt_for, ivs_params_p ip)
++type_for_clast_for (struct clast_for *stmt_fora, ivs_params_p ip)
  {
--  struct clast_stmt *stmt = (struct clast_stmt *) stmt_for;
-+  struct clast_stmt *stmt = (struct clast_stmt *) stmt_fora;
-   struct clast_user_stmt *body = clast_get_body_of_loop (stmt);
-   CloogStatement *cs = body->statement;
-   poly_bb_p pbb = (poly_bb_p) cloog_statement_usr (cs);
+   mpz_t bound_one, bound_two;
+   tree lb_type, ub_type;
+@@ -844,8 +844,8 @@ type_for_clast_for (struct clast_for *st
+   mpz_init (bound_one);
+   mpz_init (bound_two);
+ 
+-  lb_type = type_for_clast_expr (stmt_for->LB, ip, bound_one, bound_two);
+-  ub_type = type_for_clast_expr (stmt_for->UB, ip, bound_one, bound_two);
++  lb_type = type_for_clast_expr (stmt_fora->LB, ip, bound_one, bound_two);
++  ub_type = type_for_clast_expr (stmt_fora->UB, ip, bound_one, bound_two);
+ 
+   mpz_clear (bound_one);
+   mpz_clear (bound_two);
 --- gcc/graphite-poly.h.jj	2011-01-03 12:53:05.000000000 +0100
 +++ gcc/graphite-poly.h	2011-01-04 17:35:53.308788629 +0100
 @@ -22,6 +22,8 @@ along with GCC; see the file COPYING3.  
