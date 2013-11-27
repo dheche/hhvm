@@ -1,0 +1,18 @@
+diff -up gmp-4.3.1/configure.in.macro-fix gmp-4.3.1/configure.in
+--- gmp-4.3.1/configure.in.macro-fix	2012-03-01 23:33:32.938585938 +0100
++++ gmp-4.3.1/configure.in	2012-03-01 23:44:02.180514126 +0100
+@@ -22,12 +22,13 @@ You should have received a copy of the G
+ along with the GNU MP Library.  If not, see http://www.gnu.org/licenses/.
+ ]])
+ 
++AC_INIT(GNU MP, GMP_VERSION, gmp-bugs@gmplib.org, gmp)
++
+ AC_COPYRIGHT(GMP_COPYRIGHT)
+ AH_TOP(/*GMP_COPYRIGHT*/)
+ 
+ AC_REVISION($Revision$)
+ AC_PREREQ(2.59)
+-AC_INIT(GNU MP, GMP_VERSION, gmp-bugs@gmplib.org, gmp)
+ AC_CONFIG_SRCDIR(gmp-impl.h)
+ m4_pattern_forbid([^[ \t]*GMP_])
+ m4_pattern_allow(GMP_LDFLAGS)
