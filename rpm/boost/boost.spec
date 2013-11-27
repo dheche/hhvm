@@ -28,7 +28,7 @@ Name: boost
 Summary: The free peer-reviewed portable C++ source libraries
 Version: 1.48.0
 %define version_enc 1_48_0
-Release: 11%{?dist}
+Release: 12%{?dist}
 License: Boost and MIT and Python
 
 # The CMake build framework (set of CMakeLists.txt and module.cmake files) is
@@ -1010,7 +1010,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/bjam.1*
 
 %changelog
-* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 1.48.0-11
+* Thu Nov 21 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 1.48.0-12
 - Rebuilt for el6
 
 * Fri Apr 20 2012 Petr Machata <pmachata@redhat.com> - 1.48.0-11
