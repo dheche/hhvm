@@ -1,0 +1,26 @@
+diff -uNr hhvm-2.2.0.orig/CMake/HPHPSetup.cmake hhvm-2.2.0/CMake/HPHPSetup.cmake
+--- hhvm-2.2.0.orig/CMake/HPHPSetup.cmake	2013-11-26 17:52:05.094757390 +0700
++++ hhvm-2.2.0/CMake/HPHPSetup.cmake	2013-11-26 17:54:46.438663393 +0700
+@@ -11,8 +11,8 @@
+ if (APPLE OR IS_AARCH64)
+ 	set(HHVM_ANCHOR_SYMS -Wl,-u,_register_libevent_server)
+ else()
+-	set(ENABLE_FASTCGI 1)
+-	set(HHVM_ANCHOR_SYMS -Wl,-uregister_libevent_server,-uregister_fastcgi_server)
++	set(ENABLE_FASTCGI 0)
++	set(HHVM_ANCHOR_SYMS -Wl,-uregister_libevent_server)
+ endif()
+ 
+ set(HHVM_LINK_LIBRARIES
+diff -uNr hhvm-2.2.0.orig/hphp/CMakeLists.txt hhvm-2.2.0/hphp/CMakeLists.txt
+--- hhvm-2.2.0.orig/hphp/CMakeLists.txt	2013-11-26 17:52:02.488742611 +0700
++++ hhvm-2.2.0/hphp/CMakeLists.txt	2013-11-26 17:56:13.639130150 +0700
+@@ -22,6 +22,8 @@
+ SET(USE_HHVM TRUE)
+ SET(ENV{HHVM} 1)
+ ADD_DEFINITIONS("-DHHVM -DHHVM_BINARY=1 -DHHVM_PATH=\\\"${HPHP_HOME}/hphp/hhvm/hhvm\\\"")
++# Disable FastCGI
++SET(ENABLE_FASTCGI FALSE)
+ 
+ add_subdirectory(tools/bootstrap)
+ 
