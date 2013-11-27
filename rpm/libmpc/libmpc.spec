@@ -1,11 +1,11 @@
 Summary: C library for multiple precision complex arithmetic
 Name: libmpc
-Version: 0.8
-Release: 3%{?dist}
+Version: 0.8.1
+Release: 1%{?dist}
 License: LGPLv2+
 Group: Development/Tools
 URL: http://www.multiprecision.org/
-Source0: http://www.multiprecision.org/mpc/download/mpc-0.8.tar.gz
+Source0: http://www.multiprecision.org/mpc/download/mpc-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: gmp-devel mpfr-devel texinfo
 
@@ -70,6 +70,9 @@ fi
 %{_infodir}/*.info*
 
 %changelog
+* Mon Nov 25 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 0.8.1-1
+- Update to 0.8.1
+
 * Fri Nov 13 2009 Petr Machata <pmachata@redhat.com> - 0.8-3
 - Require mpfr-devel, gmp-devel in -devel subpackage
 - Don't pass --entry to install-info
