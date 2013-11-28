@@ -17,6 +17,7 @@ Source1:	hhvm.initscript
 Source2:	hhvm.hdf
 Source3:	hhvm.sysconfig
 Patch0:		hhvm-disable_fastcgi.patch
+Patch1:         hhvm-memcache_session.patch
 BuildRequires:  gcc >= 4.7.2, cmake >= 2.8.7, libevent-devel >= 1.4 
 BuildRequires:	libcurl-devel >= 7.29 
 BuildRequires:	glog-devel >= 0.3.3, jemalloc-devel >= 3.0, tbb-devel >= 4.0
@@ -44,6 +45,7 @@ modphp.
 %prep
 %setup -q -n %{name}-%{version}
 %patch0 -p1
+%patch1 -p1
 
 %build
 export HPHP_HOME=`pwd`
@@ -117,5 +119,8 @@ fi
 
 
 %changelog
+* Wed Nov 27 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.2
+- Enable Memcache Session
+
 * Tue Nov 26 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.1
 - Initial built for el6

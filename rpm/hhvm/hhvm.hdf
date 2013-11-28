@@ -1,6 +1,12 @@
 Server {
   Port = 80
   SourceRoot = /var/hhvm/
+#  Session {
+#    Handler = memcached
+#    Path = 127.0.0.1:11211
+#    HashBitsPerCharacter = 4
+#    MaxLifetime = 7200
+#  }
 }
 
 Eval {
