@@ -30,9 +30,7 @@
 * Build all package, rpmbuild -ba SPECS/*package_name.spec*
 
 ### Build Using Source RPM
-* yum install yum-utils
-* yumdownloader --source hhvm
-* rpmbuild --rebuild hhvm-2.3.0-0.2.el6.src.rpm
+* https://github.com/dheche/hhvm/wiki/Building-and-installing-hhvm-on-centos-6.x
 
 ## How to Create Local Repository
 * yum install createrepo
