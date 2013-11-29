@@ -2,13 +2,20 @@
 ## Notes
 * version: 2.3.0-dev
 * FastCGI is disabled
+* Support memcache session 
 * Arch: x86_64
 
 ## How to Install
-* URL Repository: TBD
+* Install epel and hhvm repository configuration
 
     ```
-    [dheche@fountain ~]$ sudo yum-config-manager --enable hhvm
+    [dheche@fountain ~]$ sudo rpm -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+    [dheche@fountain ~]$ sudo rpm -Uvh http://dheche.fedorapeople.org/hhvm/el6/RPMS/x86_64/hhvm-release-6-1.noarch.rpm
+    ```
+
+* Install hhvm
+
+    ```
     [dheche@fountain ~]$ sudo yum install hhvm
     ```
 
@@ -20,12 +27,12 @@
 * Copy all spec files to rpmbuild/SPECS
 * Copy remaining files to rpmbuild/SOURCES
 * Download original source (tarball) for each package to rpmbuild/SOURCES (take alook at spec file, where you can find it)
-* Build all package, rpmbuild -ba SPECS/<package.spec>
+* Build all package, rpmbuild -ba SPECS/*package_name.spec*
 
 ### Build Using Source RPM
-* URL Repository: TBD
+* yum install yum-utils
 * yumdownloader --source hhvm
-* rpmbuild --rebuild package.src.rpm
+* rpmbuild --rebuild hhvm-2.3.0-0.2.el6.src.rpm
 
 ## How to Create Local Repository
 * yum install createrepo
