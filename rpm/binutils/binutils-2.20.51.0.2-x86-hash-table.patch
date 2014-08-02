@@ -1,0 +1,92 @@
+diff -rup ../binutils-2.20.51.0.2.original/bfd/elf32-i386.c ./bfd/elf32-i386.c
+--- ../binutils-2.20.51.0.2.original/bfd/elf32-i386.c	2010-01-13 16:01:28.000000000 +0000
++++ ./bfd/elf32-i386.c	2010-02-02 13:07:58.000000000 +0000
+@@ -653,19 +653,8 @@ struct elf_i386_link_hash_table
+   asection *sdynbss;
+   asection *srelbss;
+ 
+-  /* The (unloaded but important) .rel.plt.unloaded section on VxWorks.  */
+-  asection *srelplt2;
+-
+-  /* True if the target system is VxWorks.  */
+-  int is_vxworks;
+-
+-  /* Value used to fill the last word of the first plt entry.  */
+-  bfd_byte plt0_pad_byte;
+-
+-  /* The index of the next unused R_386_TLS_DESC slot in .rel.plt.  */
+-  bfd_vma next_tls_desc_index;
+-
+-  union {
++  union
++  {
+     bfd_signed_vma refcount;
+     bfd_vma offset;
+   } tls_ldm_got;
+@@ -682,10 +671,22 @@ struct elf_i386_link_hash_table
+ 
+   /* Used by local STT_GNU_IFUNC symbols.  */
+   htab_t loc_hash_table;
+-  void *loc_hash_memory;
++  void * loc_hash_memory;
+ 
+   asection *sdynsharablebss;
+   asection *srelsharablebss;
++  
++  /* The (unloaded but important) .rel.plt.unloaded section on VxWorks.  */
++  asection *srelplt2;
++
++  /* True if the target system is VxWorks.  */
++  int is_vxworks;
++
++  /* The index of the next unused R_386_TLS_DESC slot in .rel.plt.  */
++  bfd_vma next_tls_desc_index;
++
++  /* Value used to fill the last word of the first PLT entry.  */
++  bfd_byte plt0_pad_byte;
+ };
+ 
+ /* Get the i386 ELF linker hash table from a link_info structure.  */
+diff -rup ../binutils-2.20.51.0.2.original/bfd/elf64-x86-64.c ./bfd/elf64-x86-64.c
+--- ../binutils-2.20.51.0.2.original/bfd/elf64-x86-64.c	2010-01-13 16:01:27.000000000 +0000
++++ ./bfd/elf64-x86-64.c	2010-02-02 13:15:52.000000000 +0000
+@@ -470,16 +470,8 @@ struct elf64_x86_64_link_hash_table
+   asection *sdynbss;
+   asection *srelbss;
+ 
+-  /* The offset into splt of the PLT entry for the TLS descriptor
+-     resolver.  Special values are 0, if not necessary (or not found
+-     to be necessary yet), and -1 if needed but not determined
+-     yet.  */
+-  bfd_vma tlsdesc_plt;
+-  /* The offset into sgot of the GOT entry used by the PLT entry
+-     above.  */
+-  bfd_vma tlsdesc_got;
+-
+-  union {
++  union
++  {
+     bfd_signed_vma refcount;
+     bfd_vma offset;
+   } tls_ld_got;
+@@ -495,10 +487,19 @@ struct elf64_x86_64_link_hash_table
+ 
+   /* Used by local STT_GNU_IFUNC symbols.  */
+   htab_t loc_hash_table;
+-  void *loc_hash_memory;
++  void * loc_hash_memory;
+ 
+   asection *sdynsharablebss;
+   asection *srelsharablebss;
++  
++  /* The offset into splt of the PLT entry for the TLS descriptor
++     resolver.  Special values are 0, if not necessary (or not found
++     to be necessary yet), and -1 if needed but not determined
++     yet.  */
++  bfd_vma tlsdesc_plt;
++  /* The offset into sgot of the GOT entry used by the PLT entry
++     above.  */
++  bfd_vma tlsdesc_got;
+ };
+ 
+ /* Get the x86-64 ELF linker hash table from a link_info structure.  */

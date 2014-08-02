@@ -1,0 +1,60 @@
+diff -rcp ../binutils-2.20.51.0.2-original/gold/script.cc gold/script.cc
+*** ../binutils-2.20.51.0.2-original/gold/script.cc	2010-06-09 15:28:37.000000000 +0100
+--- gold/script.cc	2010-06-09 15:48:55.000000000 +0100
+*************** script_add_file(void* closurev, const ch
+*** 2184,2189 ****
+--- 2184,2205 ----
+    closure->inputs()->add_file(file);
+  }
+  
++ // Called by the bison parser to add a library to the link.
++ 
++ extern "C" void
++ script_add_library(void* closurev, const char* name, size_t length)
++ {
++   Parser_closure* closure = static_cast<Parser_closure*>(closurev);
++   std::string name_string(name, length);
++ 
++   if (name_string[0] != 'l')
++     gold_error(_("library name must be prefixed with -l"));
++     
++   Input_file_argument file(name_string.c_str() + 1, true, "", false,
++ 			   closure->position_dependent_options());
++   closure->inputs()->add_file(file);
++ }
++ 
+  // Called by the bison parser to start a group.  If we are already in
+  // a group, that means that this script was invoked within a
+  // --start-group --end-group sequence on the command line, or that
+diff -rcp ../binutils-2.20.51.0.2-original/gold/script-c.h gold/script-c.h
+*** ../binutils-2.20.51.0.2-original/gold/script-c.h	2010-06-09 15:29:59.000000000 +0100
+--- gold/script-c.h	2010-06-09 15:41:38.000000000 +0100
+*************** script_add_extern(void* closure, const c
+*** 222,227 ****
+--- 222,232 ----
+  extern void
+  script_add_file(void* closure, const char*, size_t);
+  
++ /* Called by the bison parser to add a library to the link.  */
++ 
++ extern void
++ script_add_library(void* closure, const char*, size_t);
++ 
+  /* Called by the bison parser to start and stop a group.  */
+  
+  extern void
+diff -rcp ../binutils-2.20.51.0.2-original/gold/yyscript.y gold/yyscript.y
+*** ../binutils-2.20.51.0.2-original/gold/yyscript.y	2010-06-09 15:28:37.000000000 +0100
+--- gold/yyscript.y	2010-06-09 15:41:38.000000000 +0100
+*************** input_list:
+*** 314,319 ****
+--- 314,321 ----
+  input_list_element:
+  	  string
+  	    { script_add_file(closure, $1.value, $1.length); }
++ 	| '-' STRING
++ 	    { script_add_library(closure, $2.value, $2.length); }
+  	| AS_NEEDED
+  	    { script_start_as_needed(closure); }
+  	  '(' input_list ')'
+Only in gold: yyscript.y.gold-input~

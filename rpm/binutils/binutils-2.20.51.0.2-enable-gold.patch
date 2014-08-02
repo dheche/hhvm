@@ -1,0 +1,464 @@
+diff -rup ../binutils-2.20.51.0.2.original/ChangeLog ./ChangeLog
+--- ../binutils-2.20.51.0.2.original/ChangeLog	2009-11-12 16:31:17.000000000 +0000
++++ ./ChangeLog	2009-11-12 16:32:00.000000000 +0000
+@@ -1,3 +1,9 @@
++2009-10-15  Roland McGrath  <roland@redhat.com>
++
++	* configure.ac (--enable-gold): Accept --enable-gold=both to
++	add gold to configdirs without removing ld.
++	* configure: Regenerated.
++
+ 2009-10-06  Ian Lance Taylor  <iant@google.com>
+ 
+ 	* Makefile.def: check-gold depends upon all-gas.
+diff -rup ../binutils-2.20.51.0.2.original/configure ./configure
+--- ../binutils-2.20.51.0.2.original/configure	2009-11-12 16:31:17.000000000 +0000
++++ ./configure	2009-11-12 16:38:13.000000000 +0000
+@@ -3076,7 +3076,8 @@ else
+   ENABLE_GOLD=no
+ fi
+ 
+-if test "${ENABLE_GOLD}" = "yes"; then
++case "${ENABLE_GOLD}" in
++yes|both)
+   # Check for ELF target.
+   is_elf=no
+   case "${target}" in
+@@ -3096,11 +3097,18 @@ if test "${ENABLE_GOLD}" = "yes"; then
+     # Check for target supported by gold.
+     case "${target}" in
+       i?86-*-* | x86_64-*-* | sparc*-*-* | powerpc*-*-* | arm*-*-*)
+-        configdirs="`echo " ${configdirs} " | sed -e 's/ ld / gold /'`"
++        if test "${ENABLE_GOLD}" = both; then
++          configdirs="$configdirs gold"
++	else
++          configdirs="`echo " ${configdirs} " | sed -e 's/ ld / gold /'`"
++	fi
++
+         ;;
+     esac
+   fi
+-fi
++  ENABLE_GOLD=yes
++  ;;
++esac
+ 
+ # Configure extra directories which are host specific
+ 
+diff -rup ../binutils-2.20.51.0.2.original/configure.ac ./configure.ac
+--- ../binutils-2.20.51.0.2.original/configure.ac	2009-11-12 16:31:17.000000000 +0000
++++ ./configure.ac	2009-11-12 16:38:08.000000000 +0000
+@@ -314,7 +314,8 @@ AC_ARG_ENABLE(gold,
+ [  --enable-gold           use gold instead of ld],
+ ENABLE_GOLD=$enableval,
+ ENABLE_GOLD=no)
+-if test "${ENABLE_GOLD}" = "yes"; then
++case "${ENABLE_GOLD}" in 
++yes|both)
+   # Check for ELF target.
+   is_elf=no
+   case "${target}" in
+@@ -334,11 +335,18 @@ if test "${ENABLE_GOLD}" = "yes"; then
+     # Check for target supported by gold.
+     case "${target}" in
+       i?86-*-* | x86_64-*-* | sparc*-*-* | powerpc*-*-* | arm*-*-*)
+-        configdirs="`echo " ${configdirs} " | sed -e 's/ ld / gold /'`"
++        if test "${ENABLE_GOLD}" = both; then
++          configdirs="$configdirs gold"
++	else
++          configdirs="`echo " ${configdirs} " | sed -e 's/ ld / gold /'`"
++	fi
++
+         ;;
+     esac
+   fi
+-fi
++  ENABLE_GOLD=yes
++  ;;
++esac
+ 
+ # Configure extra directories which are host specific
+ 
+diff -rup ../binutils-2.20.51.0.2.original/gold/ChangeLog ./gold/ChangeLog
+--- ../binutils-2.20.51.0.2.original/gold/ChangeLog	2009-11-12 16:31:17.000000000 +0000
++++ ./gold/ChangeLog	2009-11-12 16:32:17.000000000 +0000
+@@ -1,3 +1,11 @@
++2009-10-15  Roland McGrath  <roland@redhat.com>
++
++	* configure.ac (ld_name): New substituted variable.
++	Under --enable-gold=both, set it to ld.gold, else to ld.
++	* configure: Regenerated.
++	* Makefile.am (install-exec-local): Use @ld_name@.
++	* Makefile.in: Regenerated.
++
+ 2009-10-07  Viktor Kutuzov  <vkutuzov@accesssoftek.com>
+ 
+ 	* arm.cc (Arm_relocate_functions::extract_arm_movw_movt_addend):
+diff -rup ../binutils-2.20.51.0.2.original/gold/configure ./gold/configure
+--- ../binutils-2.20.51.0.2.original/gold/configure	2009-11-12 16:31:17.000000000 +0000
++++ ./gold/configure	2009-11-12 16:37:17.000000000 +0000
+@@ -682,6 +682,7 @@ PLUGINS_FALSE
+ PLUGINS_TRUE
+ THREADS_FALSE
+ THREADS_TRUE
++ld_name
+ am__untar
+ am__tar
+ AMTAR
+@@ -759,6 +760,7 @@ ac_subst_files=''
+ ac_user_opts='
+ enable_option_checking
+ with_sysroot
++enable_gold
+ enable_threads
+ enable_plugins
+ enable_targets
+@@ -1403,6 +1405,7 @@ Optional Features:
+   --disable-option-checking  ignore unrecognized --enable/--with options
+   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
++  --enable-gold           building BFD ld too, install as ld.gold
+   --enable-threads        multi-threaded linking
+   --enable-plugins        linker plugins
+   --enable-targets        alternative target configurations
+@@ -3227,6 +3230,14 @@ cat >>confdefs.h <<_ACEOF
+ _ACEOF
+ 
+ 
++ld_name=ld
++# Check whether --enable-gold was given.
++if test "${enable_gold+set}" = set; then :
++  enableval=$enable_gold; test "x${enableval}" != xboth || ld_name=ld.gold
++fi
++
++
++
+ # Check whether --enable-threads was given.
+ if test "${enable_threads+set}" = set; then :
+   enableval=$enable_threads; case "${enableval}" in
+diff -rup ../binutils-2.20.51.0.2.original/gold/configure.ac ./gold/configure.ac
+--- ../binutils-2.20.51.0.2.original/gold/configure.ac	2009-11-12 16:31:17.000000000 +0000
++++ ./gold/configure.ac	2009-11-12 16:35:21.000000000 +0000
+@@ -38,6 +38,12 @@ AC_DEFINE_UNQUOTED(TARGET_SYSTEM_ROOT, "
+ AC_DEFINE_UNQUOTED(TARGET_SYSTEM_ROOT_RELOCATABLE, $sysroot_relocatable,
+   [Whether the system root can be relocated])
+ 
++ld_name=ld
++AC_ARG_ENABLE(gold,
++[  --enable-gold           building BFD ld too, install as ld.gold],
++[test "x${enableval}" != xboth || ld_name=ld.gold])
++AC_SUBST(ld_name)
++
+ dnl For now threads are a configure time option.
+ AC_ARG_ENABLE([threads],
+ [  --enable-threads        multi-threaded linking],
+diff -rup ../binutils-2.20.51.0.2.original/gold/Makefile.am ./gold/Makefile.am
+--- ../binutils-2.20.51.0.2.original/gold/Makefile.am	2009-11-12 16:31:17.000000000 +0000
++++ ./gold/Makefile.am	2009-11-12 16:34:29.000000000 +0000
+@@ -163,7 +163,7 @@ check: libgold.a
+ 
+ install-exec-local: ld-new$(EXEEXT)
+ 	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(tooldir)/bin
+-	n=`echo ld | sed '$(transform)'`; \
++	n=`echo @ld_name@ | sed '$(transform)'`; \
+ 	$(INSTALL_PROGRAM) ld-new$(EXEEXT) $(DESTDIR)$(bindir)/$${n}$(EXEEXT); \
+ 	if test "$(bindir)" != "$(tooldir)/bin"; then \
+ 	  rm -f $(DESTDIR)$(tooldir)/bin/ld$(EXEEXT); \
+diff -rup ../binutils-2.20.51.0.2.original/ld/ChangeLog ./ld/ChangeLog
+--- ../binutils-2.20.51.0.2.original/ld/ChangeLog	2009-11-12 16:31:13.000000000 +0000
++++ ./ld/ChangeLog	2009-11-12 16:32:27.000000000 +0000
+@@ -1,3 +1,13 @@
++2009-10-15  Roland McGrath  <roland@redhat.com>
++
++	* configure.ac (ld_name): New substituted variable.
++	Under --enable-gold, set it to ld.bfd, else to ld.
++	* configure: Regenerated.
++	* Makefile.am (transform): Use @ld_name@.
++	(install-exec-local): Likewise.
++	If it's not ld, install an ld symlink to it.
++	* Makefile.in: Regenerated.
++
+ 2009-10-09  Alan Modra  <amodra@bigpond.net.au>
+ 
+ 	PR ld/10749
+diff -rup ../binutils-2.20.51.0.2.original/ld/configure ./ld/configure
+--- ../binutils-2.20.51.0.2.original/ld/configure	2009-11-12 16:31:12.000000000 +0000
++++ ./ld/configure	2009-11-12 16:37:09.000000000 +0000
+@@ -797,6 +797,7 @@ GREP
+ CPP
+ NO_WERROR
+ WARN_CFLAGS
++ld_name
+ TARGET_SYSTEM_ROOT_DEFINE
+ TARGET_SYSTEM_ROOT
+ use_sysroot
+@@ -901,6 +902,7 @@ with_lib_path
+ enable_targets
+ enable_64_bit_bfd
+ with_sysroot
++enable_gold
+ enable_got
+ enable_werror
+ enable_build_warnings
+@@ -1548,6 +1550,7 @@ Optional Features:
+ 			  (and sometimes confusing) to the casual installer
+   --enable-targets        alternative target configurations
+   --enable-64-bit-bfd     64-bit support (on hosts with narrower word sizes)
++  --enable-gold           building gold too, install as ld.bfd
+   --enable-got=<type>     GOT handling scheme (target, single, negative,
+                           multigot)
+   --enable-werror         treat compile warnings as errors
+@@ -4302,6 +4305,15 @@ fi
+ 
+ 
+ 
++ld_name=ld
++# Check whether --enable-gold was given.
++if test "${enable_gold+set}" = set; then :
++  enableval=$enable_gold; case "${enableval}" in
++  yes|both) ld_name=ld.bfd
++esac
++fi
++
++
+ # Check whether --enable-got was given.
+ if test "${enable_got+set}" = set; then :
+   enableval=$enable_got; case "${enableval}" in
+@@ -6087,13 +6099,13 @@ if test "${lt_cv_nm_interface+set}" = se
+ else
+   lt_cv_nm_interface="BSD nm"
+   echo "int some_variable = 0;" > conftest.$ac_ext
+-  (eval echo "\"\$as_me:6090: $ac_compile\"" >&5)
++  (eval echo "\"\$as_me:6102: $ac_compile\"" >&5)
+   (eval "$ac_compile" 2>conftest.err)
+   cat conftest.err >&5
+-  (eval echo "\"\$as_me:6093: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
++  (eval echo "\"\$as_me:6105: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
+   cat conftest.err >&5
+-  (eval echo "\"\$as_me:6096: output\"" >&5)
++  (eval echo "\"\$as_me:6108: output\"" >&5)
+   cat conftest.out >&5
+   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
+     lt_cv_nm_interface="MS dumpbin"
+@@ -7298,7 +7310,7 @@ ia64-*-hpux*)
+   ;;
+ *-*-irix6*)
+   # Find out which ABI we are using.
+-  echo '#line 7301 "configure"' > conftest.$ac_ext
++  echo '#line 7313 "configure"' > conftest.$ac_ext
+   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
+   (eval $ac_compile) 2>&5
+   ac_status=$?
+@@ -8560,11 +8572,11 @@ else
+    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
+    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
+    -e 's:$: $lt_compiler_flag:'`
+-   (eval echo "\"\$as_me:8563: $lt_compile\"" >&5)
++   (eval echo "\"\$as_me:8575: $lt_compile\"" >&5)
+    (eval "$lt_compile" 2>conftest.err)
+    ac_status=$?
+    cat conftest.err >&5
+-   echo "$as_me:8567: \$? = $ac_status" >&5
++   echo "$as_me:8579: \$? = $ac_status" >&5
+    if (exit $ac_status) && test -s "$ac_outfile"; then
+      # The compiler can only warn and ignore the option if not recognized
+      # So say no if there are warnings other than the usual output.
+@@ -8899,11 +8911,11 @@ else
+    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
+    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
+    -e 's:$: $lt_compiler_flag:'`
+-   (eval echo "\"\$as_me:8902: $lt_compile\"" >&5)
++   (eval echo "\"\$as_me:8914: $lt_compile\"" >&5)
+    (eval "$lt_compile" 2>conftest.err)
+    ac_status=$?
+    cat conftest.err >&5
+-   echo "$as_me:8906: \$? = $ac_status" >&5
++   echo "$as_me:8918: \$? = $ac_status" >&5
+    if (exit $ac_status) && test -s "$ac_outfile"; then
+      # The compiler can only warn and ignore the option if not recognized
+      # So say no if there are warnings other than the usual output.
+@@ -9004,11 +9016,11 @@ else
+    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
+    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
+    -e 's:$: $lt_compiler_flag:'`
+-   (eval echo "\"\$as_me:9007: $lt_compile\"" >&5)
++   (eval echo "\"\$as_me:9019: $lt_compile\"" >&5)
+    (eval "$lt_compile" 2>out/conftest.err)
+    ac_status=$?
+    cat out/conftest.err >&5
+-   echo "$as_me:9011: \$? = $ac_status" >&5
++   echo "$as_me:9023: \$? = $ac_status" >&5
+    if (exit $ac_status) && test -s out/conftest2.$ac_objext
+    then
+      # The compiler can only warn and ignore the option if not recognized
+@@ -9059,11 +9071,11 @@ else
+    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
+    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
+    -e 's:$: $lt_compiler_flag:'`
+-   (eval echo "\"\$as_me:9062: $lt_compile\"" >&5)
++   (eval echo "\"\$as_me:9074: $lt_compile\"" >&5)
+    (eval "$lt_compile" 2>out/conftest.err)
+    ac_status=$?
+    cat out/conftest.err >&5
+-   echo "$as_me:9066: \$? = $ac_status" >&5
++   echo "$as_me:9078: \$? = $ac_status" >&5
+    if (exit $ac_status) && test -s out/conftest2.$ac_objext
+    then
+      # The compiler can only warn and ignore the option if not recognized
+@@ -10811,11 +10823,11 @@ fi
+   case "$host_cpu" in
+   x86_64*|s390*|powerpc*|ppc*|sparc*)
+     echo 'int i;' > conftest.$ac_ext
+-    if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
++    if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
+   (eval $ac_compile) 2>&5
+   ac_status=$?
+-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+-  (exit $ac_status); }; then
++  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
++  test $ac_status = 0; }; then
+       case `/usr/bin/file conftest.$ac_objext` in
+       *64-bit*)
+         libsuff=64
+@@ -11465,7 +11477,7 @@ else
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 11444 "configure"
++#line 11480 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+@@ -11561,7 +11573,7 @@ else
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 11540 "configure"
++#line 11576 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+diff -rup ../binutils-2.20.51.0.2.original/ld/configure.in ./ld/configure.in
+--- ../binutils-2.20.51.0.2.original/ld/configure.in	2009-11-12 16:31:10.000000000 +0000
++++ ./ld/configure.in	2009-11-12 16:36:40.000000000 +0000
+@@ -69,6 +69,14 @@ AC_SUBST(use_sysroot)
+ AC_SUBST(TARGET_SYSTEM_ROOT)
+ AC_SUBST(TARGET_SYSTEM_ROOT_DEFINE)
+ 
++ld_name=ld
++AC_ARG_ENABLE(gold,
++[  --enable-gold           building gold too, install as ld.bfd],
++[case "${enableval}" in
++  yes|both) ld_name=ld.bfd
++esac])dnl
++AC_SUBST(ld_name)
++
+ AC_ARG_ENABLE([got],
+ AS_HELP_STRING([--enable-got=<type>],
+                [GOT handling scheme (target, single, negative, multigot)]),
+diff -rup ../binutils-2.20.51.0.2.original/ld/Makefile.am ./ld/Makefile.am
+--- ../binutils-2.20.51.0.2.original/ld/Makefile.am	2009-11-12 16:31:10.000000000 +0000
++++ ./ld/Makefile.am	2009-11-12 16:36:20.000000000 +0000
+@@ -96,7 +96,7 @@ CXX_FOR_TARGET = ` \
+     fi; \
+   fi`
+ 
+-transform = s/^ld-new$$/ld/;@program_transform_name@
++transform = s/^ld-new$$/@ld_name@/;$(program_transform_name)
+ bin_PROGRAMS = ld-new
+ info_TEXINFOS = ld.texinfo
+ ld_TEXINFOS = configdoc.texi
+@@ -199,7 +199,7 @@ ALL_EMULATIONS = \
+ 	eelf32mcore.o \
+ 	eelf32mep.o \
+ 	eelf32mb_linux.o \
+- 	eelf32microblaze.o \
++	eelf32microblaze.o \
+ 	eelf32mipswindiss.o \
+ 	eelf32mt.o \
+ 	eelf32openrisc.o \
+@@ -1962,8 +1962,11 @@ CLEANFILES = dep.sed DEP DEPA DEP1 DEP2 
+ .PHONY: install-exec-local install-data-local
+ 
+ install-exec-local: ld-new$(EXEEXT)
++	[ @ld_name@ = ld ] || \
++	  (cd $(DESTDIR)/$(bindir) && \
++	   $(LN_S) -f @ld_name@ `echo ld | sed '$(transform)'`)
+ 	$(mkinstalldirs) $(DESTDIR)$(tooldir)/bin
+-	n=`echo ld | sed '$(transform)'`; \
++	n=`echo @ld_name@ | sed '$(transform)'`; \
+ 	if [ "$(bindir)/$$n$(EXEEXT)" != "$(tooldir)/bin/ld$(EXEEXT)" ]; then \
+ 	  rm -f $(DESTDIR)$(tooldir)/bin/ld$(EXEEXT); \
+ 	  ln $(DESTDIR)$(bindir)/$$n$(EXEEXT) $(DESTDIR)$(tooldir)/bin/ld$(EXEEXT) >/dev/null 2>/dev/null \
+--- ../binutils-2.20.51.0.2.original/ld/Makefile.in	2009-11-12 16:31:13.000000000 +0000
++++ ld/Makefile.in	2009-11-16 09:37:16.000000000 +0000
+@@ -149,10 +149,9 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGE
+ 	$(RECURSIVE_CLEAN_TARGETS:-recursive=) tags TAGS ctags CTAGS
+ ETAGS = etags
+ CTAGS = ctags
+-DEJATOOL = $(PACKAGE)
+ RUNTESTDEFAULTFLAGS = --tool $$tool --srcdir $$srcdir
+ DIST_SUBDIRS = $(SUBDIRS)
+-transform = s/^ld-new$$/ld/;@program_transform_name@
++transform = s/^ld-new$$/@ld_name@/;$(program_transform_name)
+ ACLOCAL = @ACLOCAL@
+ AMTAR = @AMTAR@
+ AR = @AR@
+@@ -293,6 +292,7 @@ htmldir = @htmldir@
+ includedir = @includedir@
+ infodir = @infodir@
+ install_sh = @install_sh@
++ld_name = @ld_name@
+ libdir = @libdir@
+ libexecdir = @libexecdir@
+ localedir = @localedir@
+@@ -318,6 +318,7 @@ top_build_prefix = @top_build_prefix@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+ use_sysroot = @use_sysroot@
++DEJATOOL = ld
+ AUTOMAKE_OPTIONS = dejagnu no-texinfo.tex no-dist foreign
+ ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd
+ TEXINFO_TEX = $(top_srcdir)/../texinfo/texinfo.tex
+@@ -484,7 +485,7 @@ ALL_EMULATIONS = \
+ 	eelf32mcore.o \
+ 	eelf32mep.o \
+ 	eelf32mb_linux.o \
+- 	eelf32microblaze.o \
++	eelf32microblaze.o \
+ 	eelf32mipswindiss.o \
+ 	eelf32mt.o \
+ 	eelf32openrisc.o \
+@@ -3276,8 +3277,11 @@ mostlyclean-local:
+ .PHONY: install-exec-local install-data-local
+ 
+ install-exec-local: ld-new$(EXEEXT)
++	[ @ld_name@ = ld ] || \
++	  (cd $(DESTDIR)/$(bindir) && \
++	   $(LN_S) -f @ld_name@ `echo ld | sed '$(transform)'`)
+ 	$(mkinstalldirs) $(DESTDIR)$(tooldir)/bin
+-	n=`echo ld | sed '$(transform)'`; \
++	n=`echo @ld_name@ | sed '$(transform)'`; \
+ 	if [ "$(bindir)/$$n$(EXEEXT)" != "$(tooldir)/bin/ld$(EXEEXT)" ]; then \
+ 	  rm -f $(DESTDIR)$(tooldir)/bin/ld$(EXEEXT); \
+ 	  ln $(DESTDIR)$(bindir)/$$n$(EXEEXT) $(DESTDIR)$(tooldir)/bin/ld$(EXEEXT) >/dev/null 2>/dev/null \
+--- ../binutils-2.20.51.0.2.original/gold/Makefile.in	2009-11-12 16:31:17.000000000 +0000
++++ gold/Makefile.in	2009-11-16 09:40:33.000000000 +0000
+@@ -303,6 +303,7 @@ htmldir = @htmldir@
+ includedir = @includedir@
+ infodir = @infodir@
+ install_sh = @install_sh@
++ld_name = @ld_name@
+ libdir = @libdir@
+ libexecdir = @libexecdir@
+ localedir = @localedir@
+@@ -1200,7 +1201,7 @@ check: libgold.a
+ 
+ install-exec-local: ld-new$(EXEEXT)
+ 	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(tooldir)/bin
+-	n=`echo ld | sed '$(transform)'`; \
++	n=`echo @ld_name@ | sed '$(transform)'`; \
+ 	$(INSTALL_PROGRAM) ld-new$(EXEEXT) $(DESTDIR)$(bindir)/$${n}$(EXEEXT); \
+ 	if test "$(bindir)" != "$(tooldir)/bin"; then \
+ 	  rm -f $(DESTDIR)$(tooldir)/bin/ld$(EXEEXT); \
