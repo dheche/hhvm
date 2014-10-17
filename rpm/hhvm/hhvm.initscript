@@ -1,70 +1,150 @@
-#!/bin/bash
-#
-# hhvm        Startup script for the HipHop Server
+#! /bin/bash
 #
 # chkconfig: - 85 15
 # description: HHVM is a high performance PHP toolchain
 # processname: hhvm
-# config: /etc/hhvm/hhvm.hdf
-# config: /etc/sysconfig/hhvm
-# pidfile: /var/run/hhvm/hhvm.pid
-#
-### BEGIN INIT INFO
-# Provides: hhvm
-# Short-Description: start and stop HipHop Server
-# Description: HipHop is a high performance PHP toolchain
 ### END INIT INFO
-
-HHVM=/usr/bin/hhvm
-prog=HHVM
-lockfile=/var/run/hhvm/hhvm.lock
-
+ 
+# Usage:
+# start all instances:
+# /etc/init.d/hhvm start
+# start one instance:
+# /etc/init.d/hhvm start server1
+# stop all instances:
+# /etc/init.d/hhvm stop
+# stop one instance:
+# /etc/init.d/hhvm stop server1
+ 
 # Source function library.
 . /etc/rc.d/init.d/functions
 
 if [ -f /etc/sysconfig/hhvm ]; then
         . /etc/sysconfig/hhvm
 fi
+ 
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/hhvm
+DESC=HHVM
+ 
+test -x $DAEMON || exit 0
 
+# Check that user can write to directory
+if ! su - ${USER} -s /bin/sh -c "test -w /var/run/hhvm" ; then 
+	echo "User ${USER} can't write to /var/run/hhvm"
+    exit 0
+fi 
 
+# Check that networking is up.
+if [ "$NETWORKING" = "no" ]
+then
+	exit 0
+fi
+ 
+FILES=(/etc/hhvm/*.hdf)
+# check for alternative config schema
+if [ -r "${FILES[0]}" ]; then
+	CONFIGS=()
+	for FILE in "${FILES[@]}";
+	do
+		# remove prefix
+		NAME=${FILE#/etc/hhvm/}
+		# remove suffix
+		NAME=${NAME%.hdf}
+ 
+		# check optional second param
+		if [ $# -ne 2 ];
+		then
+			# add to config array
+			CONFIGS+=($NAME)
+		elif [ "$2" == "$NAME" ];
+		then
+			# use only one hhvm
+			CONFIGS=($NAME)
+			break;
+		fi;
+	done;
+ 
+if [ ${#CONFIGS[@]} == 0 ];
+then
+	echo "Config not exist for: $2" >&2
+	exit 1
+fi;
+else
+	CONFIGS=(hhvm)
+fi;
+ 
+CONFIG_NUM=${#CONFIGS[@]}
 
-start() {
-        echo -n $"Starting $prog: "
-                daemon ${HHVM} --mode ${MODE} --user ${USER} ${ARGS}
-        RETVAL=$?
-        echo
-        [ $RETVAL = 0 ] && touch ${lockfile}
-        return $RETVAL
-}
+for ((i=0; i < $CONFIG_NUM; i++)); do
+	NAME=${CONFIGS[${i}]}
+	PIDFILE="/var/run/hhvm/${NAME}.pid"
+ 
+	RETVAL=0
+ 
+	start () {
+		# Check if this instance already running
+		HHVMPID=`ps aux | grep "hhvm" | grep ${NAME} | grep -v grep | awk '{print $2}'`
 
+		if [ "x$HHVMPID" = "x" ] && [ -f $PIDFILE ]; then
+			echo "No ${NAME} Process Found...but PID File is exist in $PIDFILE"
+			rm $PIDFILE
+		elif [ "x$HHVMPID" != "x" ]; then
+			echo "${NAME} appears to be already running!"
+			continue
+		fi
 
-stop() {
-        echo -n $"Stopping $prog: "
-        killproc -p ${PID} $HHVM
-        RETVAL=$?
-        echo
-        [ $RETVAL = 0 ] && rm -f ${lockfile} ${PID}
-}
+		echo -n "Starting $DESC ${NAME}: "
+		daemon ${DAEMON} --mode ${MODE} --user ${USER} -c /etc/hhvm/${NAME}.hdf -v PidFile=$PIDFILE ${ARGS}
+		RETVAL=$?
+		echo
+		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/hhvm
+	}
 
-# See how we were called.
-case "$1" in
-  start)
-        start
-        ;;
-  stop)
-        stop
-        ;;
-  status)
-        status -p ${PID} $HHVM
-        RETVAL=$?
-        ;;
-  restart)
-        stop
-        start
-        ;;
-  *)
-        echo $"Usage: $prog {start|stop|restart}"
-        RETVAL=2
-esac
+	stop () {
+		echo -n "Stopping $DESC ${NAME}: "
+		killproc -p $PIDFILE $DAEMON
+		RETVAL=$?
+		echo
+		if [ $RETVAL -eq 0 ] ; then
+			rm -f /var/lock/subsys/hhvm
+			rm -f $PIDFILE
+		fi
+	}
+ 
+ 	rh_status () {
+ 		status -p $PIDFILE ${NAME}
+ 	}
 
-exit $RETVAL
+	restart () {
+		stop
+		# avoid race condition
+		sleep 1
+		start
+	}
+ 
+ 
+	# See how we were called.
+	case "$1" in
+		start)
+			start
+			;;
+		stop)
+			stop
+			;;
+		restart|reload)
+			restart
+			;;
+		condrestart)
+			[ -f /var/lock/subsys/hhvm ] && restart || :
+			;;
+		status)
+			rh_status
+			RETVAL=$?
+			;;
+		*)
+			echo $"Usage: $0 {start|stop|status|restart|reload|condrestart}"
+			exit 1
+	esac
+done;
+ 
+exit $?

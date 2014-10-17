@@ -1,4 +1,3 @@
 MODE=daemon
-USER=hhvm
-PID=/var/run/hhvm/hhvm.pid
-ARGS="-c /etc/hhvm/hhvm.hdf -v PidFile=${PID}"
+USER=vagrant
+ARGS=""

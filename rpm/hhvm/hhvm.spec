@@ -5,8 +5,8 @@
 %global __os_install_post /usr/lib/rpm/brp-compress %{nil}
 
 Name:           hhvm
-Version:        3.1
-Release:        0.1%{?dist}
+Version:        2.3.0
+Release:        0.3%{?dist}
 Summary:        HipHop VM (HHVM) is a virtual machine for executing programs written in PHP
 
 Group:          Development/Compiler
@@ -16,6 +16,8 @@ Source0:        https://github.com/facebook/hhvm/archive/HHVM-%{version}.tar.gz
 Source1:	hhvm.initscript
 Source2:	hhvm.hdf
 Source3:	hhvm.sysconfig
+Patch0:		hhvm-disable_fastcgi.patch
+Patch1:		hhvm-memcache_session.patch
 BuildRequires:  gcc >= 4.7.2, cmake >= 2.8.7, libevent-devel >= 1.4 
 BuildRequires:	libcurl-devel >= 7.29 
 BuildRequires:	glog-devel >= 0.3.3, jemalloc-devel >= 3.0, tbb-devel >= 4.0
@@ -25,9 +27,11 @@ BuildRequires:	oniguruma-devel readline-devel libc-client-devel pam-devel
 BuildRequires:	libcap-devel libedit-devel pcre-devel gd-devel sqlite-devel
 BuildRequires:	inotify-tools-devel 
 BuildRequires:	boost-devel >= 1.48, libmemcached-devel >= 0.39 
+BuildRequires:	expat-devel, binutils-static, binutils-devel
+BuildRequires:	bzip2-devel, openldap-devel, elfutils-devel
 Requires:       glog >= 0.3.3, jemalloc >= 3.0, tbb >= 4.0
 Requires:	libmcrypt >= 2.5.8, libdwarf >= 20130729
-Requires:	boost >= 1.48, libmemcached >= 0.39
+Requires:	libmemcached >= 0.39
 
 %description
 HipHop VM (HHVM) is a new open-source virtual machine designed for executing 
@@ -42,6 +46,8 @@ modphp.
 
 %prep
 %setup -q -n %{name}-%{version}
+%patch0 -p1
+%patch1 -p1
 
 %build
 export HPHP_HOME=`pwd`
@@ -115,8 +121,8 @@ fi
 
 
 %changelog
-* Thu May 29 2014 Israel Shirk <israelshirk@gmail.com> - 3.1-0.1
-- Update to HHVM 3.1.  Removes custom patches as relevant options are configurable.
+* Fri Oct 17 2014 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.3
+- initscript support multiple instances
 
 * Wed Nov 27 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.2
 - Enable Memcache Session
