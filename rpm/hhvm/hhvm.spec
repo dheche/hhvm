@@ -18,10 +18,11 @@ Source2:	hhvm.hdf
 Source3:	hhvm.sysconfig
 Patch0:		hhvm-disable_fastcgi.patch
 Patch1:		hhvm-memcache_session.patch
+Patch2:		hhvm-support_for_new_version_of_libdwarf.patch
 BuildRequires:  gcc >= 4.7.2, cmake >= 2.8.7, libevent-devel >= 1.4 
 BuildRequires:	libcurl-devel >= 7.29 
 BuildRequires:	glog-devel >= 0.3.3, jemalloc-devel >= 3.0, tbb-devel >= 4.0
-BuildRequires:	libmcrypt-devel >= 2.5.8, libdwarf-devel >= 20130729
+BuildRequires:	libmcrypt-devel >= 2.5.8, libdwarf-devel >= 20130729, libdwarf-static >= 20130729
 BuildRequires:	mysql-devel libxml2-devel libicu-devel
 BuildRequires:	oniguruma-devel readline-devel libc-client-devel pam-devel
 BuildRequires:	libcap-devel libedit-devel pcre-devel gd-devel sqlite-devel
@@ -48,6 +49,7 @@ modphp.
 %setup -q -n %{name}-%{version}
 %patch0 -p1
 %patch1 -p1
+%patch2 -p1
 
 %build
 export HPHP_HOME=`pwd`
@@ -123,6 +125,7 @@ fi
 %changelog
 * Fri Oct 17 2014 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.3
 - initscript support multiple instances
+- add hhvm-support_for_new_version_of_libdwarf.patch
 
 * Wed Nov 27 2013 Teguh Dwicaksana <dheche@fedoraproject.org> - 2.3.0-0.2
 - Enable Memcache Session

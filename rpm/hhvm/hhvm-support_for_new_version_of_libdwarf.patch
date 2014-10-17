@@ -1,0 +1,166 @@
+diff -uNr hhvm-2.3.0.orig/CMake/FindLibDwarf.cmake hhvm-2.3.0/CMake/FindLibDwarf.cmake
+--- hhvm-2.3.0.orig/CMake/FindLibDwarf.cmake	2014-10-17 16:48:41.996243907 +0700
++++ hhvm-2.3.0/CMake/FindLibDwarf.cmake	2014-10-17 17:32:23.410241780 +0700
+@@ -33,7 +33,7 @@
+ 
+ find_library (LIBDWARF_LIBRARIES
+     NAMES
+-      dwarf
++      dwarf libdwarf
+     PATHS
+       /usr/lib
+       /usr/local/lib
+@@ -50,5 +50,62 @@
+     LIBDWARF_LIBRARIES
+     LIBDWARF_INCLUDE_DIRS)
+ 
++if (LIBDWARF_LIBRARIES AND LIBDWARF_INCLUDE_DIRS)
++    set(CMAKE_REQUIRED_INCLUDES ${LIBDWARF_INCLUDE_DIRS})
++    set(CMAKE_REQUIRED_LIBRARIES ${LIBDWARF_LIBRARIES} ${LIBELF_LIBRARIES})
++
++    # libdwarf makes breaking changes occasionally and doesn't provide an easy
++    # way to test for them. The following checks should detect the changes and
++    # pass that information on accordingly.
++    INCLUDE(CheckCXXSourceCompiles)
++    INCLUDE(CheckFunctionExists)
++
++    MACRO(CHECK_LIBDWARF_INIT init params var)
++    # Check for the existence of this particular init function.
++        unset(INIT_EXISTS CACHE)
++        CHECK_FUNCTION_EXISTS(${init} INIT_EXISTS)
++        if (INIT_EXISTS)
++            set(LIBDWARF_USE_INIT_C ${var})
++            # Check to see if we can use a const name.
++            unset(DW_CONST CACHE)
++            if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
++                # -std=c++11 is already set in HPHPCompiler.cmake, don't
++                # add -std=c++0x on top of that or clang will give errors
++                set(CMAKE_REQUIRED_FLAGS "-std=c++0x")
++            endif()
++
++            CHECK_CXX_SOURCE_COMPILES("
++            #include <libdwarf.h>
++            #include <cstddef>
++            int dwarfCallback(const char * a, int b, Dwarf_Unsigned c,
++              Dwarf_Unsigned d, Dwarf_Unsigned e, Dwarf_Unsigned f,
++              Dwarf_Unsigned * g, Dwarf_Ptr h, int * i) {}
++            int main() { ${init}(${params}); return 0; }" DW_CONST)
++            if (DW_CONST)
++                set(LIBDWARF_CONST_NAME 1)
++            else()
++                set(LIBDWARF_CONST_NAME 0)
++            endif()
++        endif()
++    ENDMACRO(CHECK_LIBDWARF_INIT)
++
++    # Order is important, last one is used.
++    CHECK_LIBDWARF_INIT("dwarf_producer_init"
++      "0, dwarfCallback, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr" 0)
++    CHECK_LIBDWARF_INIT("dwarf_producer_init_c" "0, dwarfCallback, nullptr, nullptr, nullptr, nullptr" 1)
++endif()
++
++if(LIBDWARF_CONST_NAME)
++    message(STATUS "libdwarf uses const char* type")
++else()
++    message(STATUS "libdwarf uses char* type")
++endif()
++if(LIBDWARF_USE_INIT_C)
++    message(STATUS "libdwarf has dwarf_producer_init_c")
++else()
++    message(STATUS "libdwarf does not have dwarf_producer_init_c, using dwarf_producer_init")
++endif()
++
+ mark_as_advanced(LIBDW_INCLUDE_DIR DWARF_INCLUDE_DIR)
+ mark_as_advanced(LIBDWARF_INCLUDE_DIRS LIBDWARF_LIBRARIES)
++mark_as_advanced(LIBDWARF_CONST_NAME LIBDWARF_USE_INIT_C)
+diff -uNr hhvm-2.3.0.orig/CMake/HPHPFindLibs.cmake hhvm-2.3.0/CMake/HPHPFindLibs.cmake
+--- hhvm-2.3.0.orig/CMake/HPHPFindLibs.cmake	2014-10-17 16:48:41.997243907 +0700
++++ hhvm-2.3.0/CMake/HPHPFindLibs.cmake	2014-10-17 17:37:40.280241523 +0700
+@@ -292,6 +292,12 @@
+ 
+ find_package(LibDwarf REQUIRED)
+ include_directories(${LIBDWARF_INCLUDE_DIRS})
++if (LIBDWARF_CONST_NAME)
++    add_definitions("-DLIBDWARF_CONST_NAME")
++endif()
++if (LIBDWARF_USE_INIT_C)
++    add_definitions("-DLIBDWARF_USE_INIT_C")
++endif()
+ 
+ find_package(LibElf REQUIRED)
+ include_directories(${LIBELF_INCLUDE_DIRS})
+diff -uNr hhvm-2.3.0.orig/hphp/runtime/vm/debug/dwarf.cpp hhvm-2.3.0/hphp/runtime/vm/debug/dwarf.cpp
+--- hhvm-2.3.0.orig/hphp/runtime/vm/debug/dwarf.cpp	2014-10-17 16:48:42.075243907 +0700
++++ hhvm-2.3.0/hphp/runtime/vm/debug/dwarf.cpp	2014-10-17 16:51:46.735243757 +0700
+@@ -33,7 +33,7 @@
+ namespace Debug {
+ 
+ 
+-int g_dwarfCallback(char *name, int size, Dwarf_Unsigned type,
++int g_dwarfCallback(LIBDWARF_CALLBACK_NAME_TYPE name, int size, Dwarf_Unsigned type,
+             Dwarf_Unsigned flags, Dwarf_Unsigned link, Dwarf_Unsigned info,
+             Dwarf_Unsigned *sect_name_index, Dwarf_Ptr handle, int *error) {
+ #if !defined(__APPLE__) && !defined(__FreeBSD__)
+diff -uNr hhvm-2.3.0.orig/hphp/runtime/vm/debug/dwarf.h hhvm-2.3.0/hphp/runtime/vm/debug/dwarf.h
+--- hhvm-2.3.0.orig/hphp/runtime/vm/debug/dwarf.h	2014-10-17 16:48:42.076243907 +0700
++++ hhvm-2.3.0/hphp/runtime/vm/debug/dwarf.h	2014-10-17 16:50:32.752243817 +0700
+@@ -52,7 +52,13 @@
+ const int DWARF_CODE_ALIGN = 1;
+ const int DWARF_DATA_ALIGN = 8;
+ 
+-extern int g_dwarfCallback(char *name, int size, Dwarf_Unsigned type,
++#ifdef LIBDWARF_CONST_NAME
++#define LIBDWARF_CALLBACK_NAME_TYPE const char*
++#else
++#define LIBDWARF_CALLBACK_NAME_TYPE char*
++#endif
++
++extern int g_dwarfCallback(LIBDWARF_CALLBACK_NAME_TYPE name, int size, Dwarf_Unsigned type,
+   Dwarf_Unsigned flags, Dwarf_Unsigned link, Dwarf_Unsigned info,
+   Dwarf_Unsigned *sect_name_index, Dwarf_Ptr handle, int *error);
+ 
+diff -uNr hhvm-2.3.0.orig/hphp/runtime/vm/debug/elfwriter.cpp hhvm-2.3.0/hphp/runtime/vm/debug/elfwriter.cpp
+--- hhvm-2.3.0.orig/hphp/runtime/vm/debug/elfwriter.cpp	2014-10-17 16:48:42.075243907 +0700
++++ hhvm-2.3.0/hphp/runtime/vm/debug/elfwriter.cpp	2014-10-17 16:53:34.519243669 +0700
+@@ -42,7 +42,7 @@
+   std::cerr << msg << '\n';
+ }
+ 
+-int ElfWriter::dwarfCallback(char *name, int size, Dwarf_Unsigned type,
++int ElfWriter::dwarfCallback(LIBDWARF_CALLBACK_NAME_TYPE name, int size, Dwarf_Unsigned type,
+   Dwarf_Unsigned flags, Dwarf_Unsigned link, Dwarf_Unsigned info) {
+   if (!strncmp(name, ".rel", 4))
+     return 0;
+@@ -449,7 +449,7 @@
+   return true;
+ }
+ 
+-int ElfWriter::newSection(char *name,
++int ElfWriter::newSection(LIBDWARF_CALLBACK_NAME_TYPE name,
+   uint64_t size, uint32_t type, uint64_t flags,
+   uint64_t addr/* = 0*/) {
+   Elf_Scn *scn = elf_newscn(m_elf);
+diff -uNr hhvm-2.3.0.orig/hphp/runtime/vm/debug/elfwriter.h hhvm-2.3.0/hphp/runtime/vm/debug/elfwriter.h
+--- hhvm-2.3.0.orig/hphp/runtime/vm/debug/elfwriter.h	2014-10-17 16:48:42.076243907 +0700
++++ hhvm-2.3.0/hphp/runtime/vm/debug/elfwriter.h	2014-10-17 16:55:15.255243588 +0700
+@@ -38,9 +38,9 @@
+   typedef std::map<const char *, Dwarf_Signed> FileDB;
+   FileDB m_fileDB;
+ 
+-  ElfWriter(DwarfChunk* d);
++  explicit ElfWriter(DwarfChunk* d);
+   ~ElfWriter();
+-  int dwarfCallback(char *name, int size, Dwarf_Unsigned type,
++  int dwarfCallback(LIBDWARF_CALLBACK_NAME_TYPE name, int size, Dwarf_Unsigned type,
+     Dwarf_Unsigned flags, Dwarf_Unsigned link, Dwarf_Unsigned info);
+   void logError(const std::string& msg);
+   int addSectionString(const std::string& name);
+@@ -53,7 +53,7 @@
+   bool addFrameInfo(DwarfChunk* d);
+   bool writeDwarfInfo();
+   int newSection(
+-    char *name, uint64_t size, uint32_t type,
++    LIBDWARF_CALLBACK_NAME_TYPE name, uint64_t size, uint32_t type,
+     uint64_t flags, uint64_t addr = 0);
+   bool addSectionData(int section, void *data, uint64_t size);
+   int writeStringSection();
