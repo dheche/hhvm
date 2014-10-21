@@ -83,15 +83,7 @@ for ((i=0; i < $CONFIG_NUM; i++)); do
  
 	start () {
 		# Check if this instance already running
-		HHVMPID=`ps aux | grep "hhvm" | grep ${NAME} | grep -v grep | awk '{print $2}'`
-
-		if [ "x$HHVMPID" = "x" ] && [ -f $PIDFILE ]; then
-			echo "No ${NAME} Process Found...but PID File is exist in $PIDFILE"
-			rm $PIDFILE
-		elif [ "x$HHVMPID" != "x" ]; then
-			echo "${NAME} appears to be already running!"
-			continue
-		fi
+                rh_status_q && echo "${NAME} appears to be already running!" && continue
 
 		echo -n "Starting $DESC ${NAME}: "
 		daemon ${DAEMON} --mode ${MODE} --user ${USER} -c /etc/hhvm/${NAME}.hdf -v PidFile=$PIDFILE ${ARGS}
@@ -114,6 +106,10 @@ for ((i=0; i < $CONFIG_NUM; i++)); do
  	rh_status () {
  		status -p $PIDFILE ${NAME}
  	}
+
+        rh_status_q() {
+                rh_status >/dev/null 2>&1
+        }
 
 	restart () {
 		stop
